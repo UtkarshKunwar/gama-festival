@@ -36,6 +36,7 @@ global
     	create ExitGate number: 1 with: (name: "ExitGate", location: exitPoint);
     }
 
+	// Pause after some cycles.
     int max_cycles <- 300000;
     reflex stop when: cycle = max_cycles {
     	write "Paused.";
@@ -43,6 +44,7 @@ global
     }
 }
 
+// General guest.
 species FestivalGuest skills: [moving]
 {
 	// Display icon of the person.
@@ -75,6 +77,7 @@ species FestivalGuest skills: [moving]
 
     point targetPoint <- nil;
 
+	// State variables.
     bool hungry <- false;
     bool thirsty <- false;
     bool moving <- false;
@@ -424,7 +427,7 @@ species SecurityGuard skills: [moving]
     	do goto target: targetPoint speed: move_speed * 2;
     }
 
-    // Kill the suspect.
+    // Escort the suspect out of the venue.
     reflex nearTarget when: hunting and location distance_to(targetPoint) < building_interaction_distance {
     	list<FestivalGuest> suspects <- FestivalGuest at_distance(guest_interaction_distance);
     	loop suspect over: suspects {
@@ -453,11 +456,13 @@ species SecurityGuard skills: [moving]
     	}
     }
 
+	// Change state when at secturity post.
     reflex atSecurityPost when: location distance_to(securityGuardPoint) < building_interaction_distance {
     	hunting <- false;
     	eliminated <- false;
     }
 
+	// Change state when at exit gate.
     reflex atExitGate when: eliminated and location distance_to(exitPoint) < building_interaction_distance {
     	targetPoint <- securityGuardPoint;
     	hunting <- false;
@@ -478,6 +483,7 @@ species InformationCentre
     int nFoodPoints <- 2;
     int nDrinksPoints <- 2;
 
+	// State variables.
     list<point> foodPoints <- [];
     list<point> drinksPoints <- [];
     list<point> badPeopleLocations <- [];
@@ -519,6 +525,7 @@ species InformationCentre
     	}
     }
 
+	// Sends message to security guard about one of the bad people locations.
     reflex informSecurity when: length(badPeopleLocations) > 0 {
     	ask SecurityGuard {
     		if !self.hunting {
