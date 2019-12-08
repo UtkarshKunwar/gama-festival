@@ -44,7 +44,7 @@ global {
 }
 
 // General guest.
-species FestivalGuest skills: [moving] {
+species FestivalGuest skills: [moving, fipa] {
 // Display icon of the person.
 	image_file my_icon <- image_file("../includes/data/dance.png");
 	float icon_size <- 1 #m;
@@ -85,6 +85,7 @@ species FestivalGuest skills: [moving] {
 	bool bad <- false;
 	bool near_bad <- false;
 	point bad_location <- nil;
+	FestivalGuest bad_agent <- nil;
 	bool leave <- false;
 	list<point> foodPoints <- nil;
 	point foodPoint <- nil;
@@ -92,6 +93,7 @@ species FestivalGuest skills: [moving] {
 	point drinksPoint <- nil;
 	point random_point <- nil;
 	float distance_travelled <- 0.0;
+	float wallet <- rnd(0.0, 500.0);
 
 	// Caluclates the distance travelled by the person.
 	reflex calculateDistance when: moving {
@@ -365,7 +367,8 @@ species FestivalGuest skills: [moving] {
 				if self.bad and !myself.bad {
 					myself.near_bad <- true;
 					myself.targetPoint <- informationCentrePoint;
-					myself.bad_location <- self.location;
+					//myself.bad_location <- self.location;
+					myself.bad_agent <- self;
 					break;
 				}
 
@@ -431,11 +434,60 @@ species FestivalGuest skills: [moving] {
 		do die;
 	}
 
+	// read inform msgs from security guard
+	list<string> leave_msgs <- ['Get out', 'GET OUT YOU F***R'];
+
+	reflex receive_inform_msgs when: !empty(informs) {
+		message inf <- informs[0];
+		switch inf.contents[0] {
+			match leave_msgs[0] {
+			// bribe if you have some money
+				if (wallet > 0) {
+					write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to " + agent(inf.sender).name + ")";
+					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
+				} else {
+				// fool guard and change location
+					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
+				}
+
+			}
+
+			match leave_msgs[1] {
+			// bribe if you have some money
+				if (wallet > 0) {
+					write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to " + agent(inf.sender).name + ")";
+					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
+				} else {
+				// sincerely go out
+					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
+					leave <- true;
+					targetPoint <- exitPoint;
+				}
+
+			}
+
+		}
+
+	}
+
+	// read agree msg
+	reflex receive_agree_msgs when: !empty(agrees) {
+	// change location or turn into good guy
+		message msg <- agrees[0];
+		wallet <- wallet - int(msg.contents[1]);
+	}
+
+	// read refused msg
+	reflex receive_refuse_msgs when: !empty(refuses) {
+		leave <- true;
+		targetPoint <- exitPoint;
+	}
+
 }
 
 //------------------------------------------------------Security Guard Begins------------------------------------------------------
 // Security Guard
-species SecurityGuard skills: [moving] {
+species SecurityGuard skills: [moving, fipa] {
 // Display icon of the information centre.
 	image_file my_icon <- image_file("../includes/data/security.png");
 	float icon_size <- 1 #m;
@@ -453,27 +505,40 @@ species SecurityGuard skills: [moving] {
 	float wallet <- 0.0;
 	point securityGuardPoint <- location;
 	point targetPoint <- nil;
-	string badName <- nil;
-
+	FestivalGuest bad_agent <- nil;
+	list<string> leave_msgs <- ['Get out', 'GET OUT YOU F***R'];
+	bool reached_bad_agent <- false;
 	// Move to a given point.
 	reflex moveToTarget when: targetPoint != nil {
 		do goto target: targetPoint speed: move_speed * 2;
 	}
 
-	// Escort the suspect out of the venue.
-	reflex nearTarget when: hunting and location distance_to (targetPoint) < building_interaction_distance {
-		list<FestivalGuest> suspects <- FestivalGuest at_distance (guest_interaction_distance);
-		loop suspect over: suspects {
-			ask suspect {
-				if self.bad {
-					self.leave <- true;
-					self.targetPoint <- exitPoint;
-					myself.targetPoint <- exitPoint;
-					myself.badName <- self.name;
-					myself.eliminated <- true;
-					break;
-				}
+	// Update wallet money for English Auction
+	reflex recive_request_from_evil_guy when: !empty(requests) and reached_bad_agent {
+		message req <- requests[0];
+		if (req.contents[0] = 'OK') {
+		// evil guy will leave or change location
+			if (isStrict) {
+			// escort the evil guy 
+				eliminated <- true;
+				targetPoint <- exitPoint;
+			} else {
+			// assume he will go out himself 
+				eliminated <- true;
+			}
 
+		} else if (req.contents[0] = 'BRIBE') {
+		// security guard takes bribe if he is corrupt
+			if (isCorrupt) {
+			// take bribe
+				write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") takes " + string(req.contents[1]) + " bribe from (" + agent(req.sender).name + ")";
+				do agree with: [message:: req, contents::['Enjoy', req.contents[1]]];
+				wallet <- wallet + int(req.contents[1]);
+				eliminated <- true;
+			} else {
+				write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") refuse to take " + string(req.contents[1]) + " bribe from (" + agent(req.sender).name + ")";
+				do refuse with: [message:: req, contents::[leave_msgs[1]]];
+				eliminated <- true;
 			}
 
 		}
@@ -483,14 +548,48 @@ species SecurityGuard skills: [moving] {
 		// Remove the guy from list (even if he wasn't removed because he could not be found).
 		ask InformationCentre {
 			remove first(self.badPeopleLocations) from: self.badPeopleLocations;
-			write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Removed trouble maker (" + string(myself.badName) + ")";
+			write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Removed trouble maker (" + string(myself.bad_agent.name) + ")";
 			write "Cycle (" + string(cycle) + ") Agent (" + string(self.name) + ") " + string(length(self.badPeopleLocations)) + " complaint(s).";
 		}
 
-		if !eliminated {
-			write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") Unable to find bad person.";
-			targetPoint <- securityGuardPoint;
+	}
+	// Escort the suspect out of the venue.
+	reflex nearTarget when: hunting and location distance_to (targetPoint) < building_interaction_distance and !reached_bad_agent {
+		reached_bad_agent <- true;
+		if (!isStrict) {
+			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[0], exitPoint]];
+		} else {
+			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[1], exitPoint]];
 		}
+
+		//		list<FestivalGuest> suspects <- FestivalGuest at_distance (guest_interaction_distance);
+		//		loop suspect over: suspects {
+		//			ask suspect {
+		//				if self.bad {
+		//					self.leave <- true;
+		//					self.targetPoint <- exitPoint;
+		//					myself.targetPoint <- exitPoint;
+		//					//myself.badName <- self.name;
+		//					myself.eliminated <- true;
+		//					break;
+		//				}
+		//
+		//			}
+		//
+		//		}
+		//		hunting <- false;
+		//
+		//		// Remove the guy from list (even if he wasn't removed because he could not be found).
+		//		ask InformationCentre {
+		//			remove first(self.badPeopleLocations) from: self.badPeopleLocations;
+		//			write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Removed trouble maker (" + string(myself.bad_agent.name) + ")";
+		//			write "Cycle (" + string(cycle) + ") Agent (" + string(self.name) + ") " + string(length(self.badPeopleLocations)) + " complaint(s).";
+		//		}
+		//
+		//		if !eliminated {
+		//			write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") Unable to find bad person.";
+		//			targetPoint <- securityGuardPoint;
+		//		}
 
 	}
 
@@ -509,6 +608,7 @@ species SecurityGuard skills: [moving] {
 }
 
 //------------------------------------------------------Security Guard Ends------------------------------------------------------
+//------------------------------------------------------Information Centre Begins------------------------------------------------------
 // Information Centre
 species InformationCentre {
 // Display icon of the information centre.
@@ -527,6 +627,7 @@ species InformationCentre {
 	list<point> foodPoints <- [];
 	list<point> drinksPoints <- [];
 	list<point> badPeopleLocations <- [];
+	list<FestivalGuest> badPeoples <- [];
 	point securityGuardPoint <- informationCentrePoint + {-10.0, 0.0};
 
 	init {
@@ -552,6 +653,7 @@ species InformationCentre {
 			ask guest {
 				if self.near_bad {
 					myself.badPeopleLocations <+ self.bad_location;
+					myself.badPeoples <+ self.bad_agent;
 					self.near_bad <- false;
 					self.bad_location <- nil;
 					self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
@@ -572,14 +674,15 @@ species InformationCentre {
 		ask SecurityGuard {
 			if !self.hunting {
 				self.targetPoint <- myself.badPeopleLocations[0];
+				self.bad_agent <- myself.badPeoples[0];
 				self.hunting <- true;
 			}
 
 		}
 
 	} }
-
-	// Food Shop.
+	//------------------------------------------------------Information Centre Ends------------------------------------------------------
+// Food Shop.
 species FoodShop schedules: [] frequency: 0 {
 // Display icon of the food shop.
 	image_file my_icon <- image_file("../includes/data/food.png");
@@ -628,7 +731,8 @@ experiment festival type: gui {
 			species ExitGate aspect: icon refresh: false;
 		}
 
-		inspect "distance inspector" value: FestivalGuest attributes: ["boredom"];
+		inspect "distance inspector" value: FestivalGuest attributes: ["boredom", "wallet"];
+		inspect "wallet money inspector" value: SecurityGuard attributes: ["wallet"];
 	}
 
 }
