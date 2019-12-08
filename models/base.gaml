@@ -9,7 +9,7 @@ model base
 global {
 	float worldDimension <- 100 #m;
 	geometry worldShape <- square(worldDimension);
-	float step <- 1 #s;
+	float step <- 2 #s;
 
 	// Globals for people.
 	float max_hunger <- 1.0;
@@ -234,7 +234,7 @@ species FestivalGuest skills: [moving, fipa] {
 						myself.targetPoint <- myself.foodPoint;
 						myself.at_info <- true;
 						asked <- true;
-						write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Got food point from neighbour (" + string(self.name) + ")";
+						//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Got food point from neighbour (" + string(self.name) + ")";
 						break;
 					} else if myself.thirsty and self.drinksPoint != nil {
 						myself.drinksPoints <- self.drinksPoints;
@@ -242,7 +242,7 @@ species FestivalGuest skills: [moving, fipa] {
 						myself.targetPoint <- myself.drinksPoint;
 						myself.at_info <- true;
 						asked <- true;
-						write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + "Got drinks point from neighbour (" + string(self.name) + ")";
+						//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + "Got drinks point from neighbour (" + string(self.name) + ")";
 						break;
 					}
 
@@ -262,7 +262,7 @@ species FestivalGuest skills: [moving, fipa] {
 	reflex atInformationCentre when: (hungry or thirsty) and !at_info and location distance_to (informationCentrePoint) < building_interaction_distance and !at_store {
 		at_info <- true;
 		moving <- false;
-		write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Information Centre";
+		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Information Centre";
 	}
 
 	// Get store location from information centre.
@@ -273,14 +273,14 @@ species FestivalGuest skills: [moving, fipa] {
 				myself.foodPoints <- self.foodPoints;
 				myself.foodPoint <- any(myself.foodPoints);
 				myself.targetPoint <- myself.foodPoint;
-				write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Got Food Point";
+				//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Got Food Point";
 			}
 
 			if myself.thirsty and myself.drinksPoint = nil {
 				myself.drinksPoints <- self.drinksPoints;
 				myself.drinksPoint <- any(myself.drinksPoints);
 				myself.targetPoint <- myself.drinksPoint;
-				write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Got Drinks Point";
+				//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Got Drinks Point";
 			}
 
 		}
@@ -300,7 +300,7 @@ species FestivalGuest skills: [moving, fipa] {
 		bored <- false;
 		random_point <- {rnd(worldDimension), rnd(worldDimension)};
 		targetPoint <- random_point;
-		write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Food Point";
+		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Food Point";
 	}
 
 	// Check if at store and get drinks and replenish health at the drinks store.
@@ -316,7 +316,7 @@ species FestivalGuest skills: [moving, fipa] {
 		bored <- false;
 		random_point <- {rnd(worldDimension), rnd(worldDimension)};
 		targetPoint <- random_point;
-		write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Drinks Point";
+		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Drinks Point";
 	}
 
 	// Check if at random point.
@@ -326,7 +326,7 @@ species FestivalGuest skills: [moving, fipa] {
 		moving <- false;
 		random_point <- nil;
 		targetPoint <- nil;
-		write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Random Point";
+		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Random Point";
 	}
 
 	// Become bad with some probability after some time.
@@ -367,7 +367,7 @@ species FestivalGuest skills: [moving, fipa] {
 				if self.bad and !myself.bad {
 					myself.near_bad <- true;
 					myself.targetPoint <- informationCentrePoint;
-					//myself.bad_location <- self.location;
+					myself.bad_location <- self.location;
 					myself.bad_agent <- self;
 					break;
 				}
@@ -414,7 +414,7 @@ species FestivalGuest skills: [moving, fipa] {
 						myself.boredom <- 0.8;
 						myself.bored <- false;
 						myself.boredom_count <- myself.boredom_count + 1;
-						write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") going to dance with (" + string(self.name) + ")";
+						//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") going to dance with (" + string(self.name) + ")";
 						break;
 					} else if self.bad {
 						boredom_count <- boredom_count + 1;
@@ -439,23 +439,22 @@ species FestivalGuest skills: [moving, fipa] {
 
 	reflex receive_inform_msgs when: !empty(informs) {
 		message inf <- informs[0];
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform message from ' + agent(inf.sender).name + inf.contents;
 		switch inf.contents[0] {
 			match leave_msgs[0] {
-			// bribe if you have some money
-				if (wallet > 0) {
-					write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to " + agent(inf.sender).name + ")";
-					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
-				} else {
-				// fool guard and change location
-					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
-				}
 
+			// fool guard and change location
+				write "Cycle (" + string(cycle) + ") Agent (" + name + ' fooled ' + agent(inf.sender).name;
+				do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
+				bad <- false; // turned into good guy
+				random_point <- {rnd(worldDimension), rnd(worldDimension)};
+				targetPoint <- random_point;
 			}
 
 			match leave_msgs[1] {
 			// bribe if you have some money
-				if (wallet > 0) {
-					write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to " + agent(inf.sender).name + ")";
+				if (wallet > 100) {
+					write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to (" + agent(inf.sender).name + ")";
 					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
 				} else {
 				// sincerely go out
@@ -475,6 +474,9 @@ species FestivalGuest skills: [moving, fipa] {
 	// change location or turn into good guy
 		message msg <- agrees[0];
 		wallet <- wallet - int(msg.contents[1]);
+		bad <- false;
+		random_point <- {rnd(worldDimension), rnd(worldDimension)};
+		targetPoint <- random_point;
 	}
 
 	// read refused msg
@@ -498,7 +500,7 @@ species SecurityGuard skills: [moving, fipa] {
 
 	bool hunting <- false;
 	bool eliminated <- false;
-	bool isCorrupt <- false;
+	bool isCorrupt <- true;
 	bool isStrict <- false;
 	float corruptness <- rnd(0.0, 1.0);
 	float strictness <- rnd(0.0, 1.0);
@@ -517,14 +519,16 @@ species SecurityGuard skills: [moving, fipa] {
 	reflex recive_request_from_evil_guy when: !empty(requests) and reached_bad_agent {
 		message req <- requests[0];
 		if (req.contents[0] = 'OK') {
-		// evil guy will leave or change location
 			if (isStrict) {
 			// escort the evil guy 
 				eliminated <- true;
 				targetPoint <- exitPoint;
 			} else {
-			// assume he will go out himself 
+			// assume he will go out himself. Guard is fooled by bad guy
+				targetPoint <- securityGuardPoint;
 				eliminated <- true;
+				hunting <- false;
+				reached_bad_agent <- false;
 			}
 
 		} else if (req.contents[0] = 'BRIBE') {
@@ -535,19 +539,22 @@ species SecurityGuard skills: [moving, fipa] {
 				do agree with: [message:: req, contents::['Enjoy', req.contents[1]]];
 				wallet <- wallet + int(req.contents[1]);
 				eliminated <- true;
+				targetPoint <- securityGuardPoint;
+				hunting <- false;
+				reached_bad_agent <- false;
 			} else {
 				write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") refuse to take " + string(req.contents[1]) + " bribe from (" + agent(req.sender).name + ")";
 				do refuse with: [message:: req, contents::[leave_msgs[1]]];
 				eliminated <- true;
+				targetPoint <- exitPoint;
 			}
 
 		}
 
-		hunting <- false;
-
 		// Remove the guy from list (even if he wasn't removed because he could not be found).
 		ask InformationCentre {
 			remove first(self.badPeopleLocations) from: self.badPeopleLocations;
+			remove first(self.badPeoples) from: self.badPeoples;
 			write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Removed trouble maker (" + string(myself.bad_agent.name) + ")";
 			write "Cycle (" + string(cycle) + ") Agent (" + string(self.name) + ") " + string(length(self.badPeopleLocations)) + " complaint(s).";
 		}
@@ -557,9 +564,11 @@ species SecurityGuard skills: [moving, fipa] {
 	reflex nearTarget when: hunting and location distance_to (targetPoint) < building_interaction_distance and !reached_bad_agent {
 		reached_bad_agent <- true;
 		if (!isStrict) {
-			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[0], exitPoint]];
+			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[0]]];
+			write 'hello' + bad_agent;
 		} else {
-			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[1], exitPoint]];
+			write 'hello' + bad_agent;
+			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[1]]];
 		}
 
 		//		list<FestivalGuest> suspects <- FestivalGuest at_distance (guest_interaction_distance);
@@ -603,6 +612,7 @@ species SecurityGuard skills: [moving, fipa] {
 	reflex atExitGate when: eliminated and location distance_to (exitPoint) < building_interaction_distance {
 		targetPoint <- securityGuardPoint;
 		hunting <- false;
+		reached_bad_agent <- false;
 	}
 
 }
@@ -656,6 +666,7 @@ species InformationCentre {
 					myself.badPeoples <+ self.bad_agent;
 					self.near_bad <- false;
 					self.bad_location <- nil;
+					self.bad_agent <- nil;
 					self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
 					self.targetPoint <- self.random_point;
 					self.at_store <- true; // To reset the state of the person. No significance to reporting of bad person.
@@ -731,8 +742,8 @@ experiment festival type: gui {
 			species ExitGate aspect: icon refresh: false;
 		}
 
-		inspect "distance inspector" value: FestivalGuest attributes: ["boredom", "wallet"];
-		inspect "wallet money inspector" value: SecurityGuard attributes: ["wallet"];
+		inspect "guest" value: FestivalGuest attributes: ["bad_agent", "wallet"] type: table;
+		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict", "hunting", "reached_bad_agent"] type: table;
 	}
 
 }
