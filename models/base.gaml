@@ -684,9 +684,14 @@ species InformationCentre {
 	reflex informSecurity when: length(badPeopleLocations) > 0 {
 		ask SecurityGuard {
 			if !self.hunting {
-				self.targetPoint <- myself.badPeopleLocations[0];
-				self.bad_agent <- myself.badPeoples[0];
-				self.hunting <- true;
+				if !dead(myself.badPeoples[0]) {
+					self.targetPoint <- myself.badPeopleLocations[0];
+					self.bad_agent <- myself.badPeoples[0];
+					self.hunting <- true;
+				} else {
+					write "Cycle (" + string(cycle) + ") Agent (" + myself.badPeoples[0] + " is already dead.";
+				}
+
 			}
 
 		}
