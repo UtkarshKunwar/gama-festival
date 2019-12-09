@@ -434,9 +434,8 @@ species FestivalGuest skills: [moving, fipa] {
 		do die;
 	}
 
-	// read inform msgs from security guard
 	list<string> leave_msgs <- ['Get out', 'GET OUT YOU F***R'];
-
+	// read inform msgs from security guard
 	reflex receive_inform_msgs when: !empty(informs) {
 		message inf <- informs[0];
 		write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform message from ' + agent(inf.sender).name + inf.contents;
@@ -474,7 +473,7 @@ species FestivalGuest skills: [moving, fipa] {
 
 	}
 
-	// read agree msg
+	// read agree msg from security guard
 	reflex receive_agree_msgs when: !empty(agrees) {
 	// change location or turn into good guy
 		message msg <- agrees[0];
@@ -484,7 +483,7 @@ species FestivalGuest skills: [moving, fipa] {
 		targetPoint <- random_point;
 	}
 
-	// read refused msg
+	// read refused msg from security guard
 	reflex receive_refuse_msgs when: !empty(refuses) {
 		leave <- true;
 		targetPoint <- exitPoint;
@@ -515,6 +514,8 @@ species SecurityGuard skills: [moving, fipa] {
 	FestivalGuest bad_agent <- nil;
 	list<string> leave_msgs <- ['Get out', 'GET OUT YOU F***R'];
 	bool reached_bad_agent <- false;
+	list<FestivalGuest> badPeoples <- [];
+
 	// Move to a given point.
 	reflex moveToTarget when: targetPoint != nil {
 		do goto target: targetPoint speed: move_speed * 2;
@@ -557,53 +558,43 @@ species SecurityGuard skills: [moving, fipa] {
 		}
 
 		// Remove the guy from list (even if he wasn't removed because he could not be found).
-		ask InformationCentre {
-			remove first(self.badPeopleLocations) from: self.badPeopleLocations;
-			remove first(self.badPeoples) from: self.badPeoples;
-			write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Removed trouble maker (" + string(myself.bad_agent.name) + ")";
-			write "Cycle (" + string(cycle) + ") Agent (" + string(self.name) + ") " + string(length(self.badPeopleLocations)) + " complaint(s).";
+		remove first(badPeoples) from: badPeoples;
+		do inform_information_centre(bad_agent);
+	}
+
+	// action to inform information center
+	action inform_information_centre (FestivalGuest removed_agent) {
+		do start_conversation with: [to::list(InformationCentre), protocol::'fipa-contract-net', performative::'inform', contents::['Removed', removed_agent]];
+	}
+
+	// Hunts bad people one by one
+	reflex getTarget when: length(badPeoples) > 0 and !hunting {
+		if !dead(badPeoples[0]) {
+			bad_agent <- badPeoples[0];
+			targetPoint <- bad_agent.location;
+			hunting <- true;
+		} else {
+			write "Cycle (" + string(cycle) + ") Agent (" + badPeoples[0] + " is already dead.";
+			remove first(badPeoples) from: badPeoples;
+			do inform_information_centre(badPeoples[0]);
 		}
 
 	}
+
+	// Maintain a list of bad peoples
+	reflex recieve_msgs_from_info_center when: !empty(informs) {
+		message inf <- informs[0];
+		badPeoples <+ inf.contents[1];
+	}
+
 	// Escort the suspect out of the venue.
 	reflex nearTarget when: hunting and location distance_to (targetPoint) < building_interaction_distance and !reached_bad_agent {
 		reached_bad_agent <- true;
 		if (!isStrict) {
 			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[0]]];
-			write 'hello' + bad_agent;
 		} else {
-			write 'hello' + bad_agent;
 			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[1]]];
 		}
-
-		//		list<FestivalGuest> suspects <- FestivalGuest at_distance (guest_interaction_distance);
-		//		loop suspect over: suspects {
-		//			ask suspect {
-		//				if self.bad {
-		//					self.leave <- true;
-		//					self.targetPoint <- exitPoint;
-		//					myself.targetPoint <- exitPoint;
-		//					//myself.badName <- self.name;
-		//					myself.eliminated <- true;
-		//					break;
-		//				}
-		//
-		//			}
-		//
-		//		}
-		//		hunting <- false;
-		//
-		//		// Remove the guy from list (even if he wasn't removed because he could not be found).
-		//		ask InformationCentre {
-		//			remove first(self.badPeopleLocations) from: self.badPeopleLocations;
-		//			write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Removed trouble maker (" + string(myself.bad_agent.name) + ")";
-		//			write "Cycle (" + string(cycle) + ") Agent (" + string(self.name) + ") " + string(length(self.badPeopleLocations)) + " complaint(s).";
-		//		}
-		//
-		//		if !eliminated {
-		//			write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") Unable to find bad person.";
-		//			targetPoint <- securityGuardPoint;
-		//		}
 
 	}
 
@@ -625,7 +616,7 @@ species SecurityGuard skills: [moving, fipa] {
 //------------------------------------------------------Security Guard Ends------------------------------------------------------
 //------------------------------------------------------Information Centre Begins------------------------------------------------------
 // Information Centre
-species InformationCentre {
+species InformationCentre skills: [fipa] {
 // Display icon of the information centre.
 	image_file my_icon <- image_file("../includes/data/information_centre.png");
 	float icon_size <- 1 #m;
@@ -641,7 +632,7 @@ species InformationCentre {
 	// State variables.
 	list<point> foodPoints <- [];
 	list<point> drinksPoints <- [];
-	list<point> badPeopleLocations <- [];
+	list<SecurityGuard> sg_list <- [];
 	list<FestivalGuest> badPeoples <- [];
 	point securityGuardPoint <- informationCentrePoint + {-10.0, 0.0};
 
@@ -658,7 +649,8 @@ species InformationCentre {
 		}
 
 		// Spawn security guard.
-		create SecurityGuard number: 1 with: (location: securityGuardPoint);
+		create SecurityGuard number: 1 with: (location: securityGuardPoint) returns: sg;
+		sg_list <- sg;
 	}
 
 	// Gets the location of the baddies from the guest who has come to complain.
@@ -667,7 +659,6 @@ species InformationCentre {
 		loop guest over: guests {
 			ask guest {
 				if self.near_bad {
-					myself.badPeopleLocations <+ self.bad_location;
 					myself.badPeoples <+ self.bad_agent;
 					self.near_bad <- false;
 					self.bad_location <- nil;
@@ -675,8 +666,10 @@ species InformationCentre {
 					self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
 					self.targetPoint <- self.random_point;
 					self.at_store <- true; // To reset the state of the person. No significance to reporting of bad person.
-					write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") Bad Guy Reported by (" + string(self.name) + ")";
-					write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") " + string(length(myself.badPeopleLocations)) + " complaint(s).";
+					// Inform security guard to remove agents
+					do start_conversation with: [to::list(myself.sg_list), protocol::'fipa-contract-net', performative::'inform', contents::['Remove', myself.badPeoples[0]]];
+					write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") Bad Guy Reported by (" + self.name + ")";
+					write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") " + string(length(myself.badPeoples)) + " complaint(s).";
 				}
 
 			}
@@ -685,23 +678,17 @@ species InformationCentre {
 
 	}
 
-	// Sends message to security guard about one of the bad people locations.
-	reflex informSecurity when: length(badPeopleLocations) > 0 {
-		ask SecurityGuard {
-			if !self.hunting {
-				if !dead(myself.badPeoples[0]) {
-					self.targetPoint <- myself.badPeopleLocations[0];
-					self.bad_agent <- myself.badPeoples[0];
-					self.hunting <- true;
-				} else {
-					write "Cycle (" + string(cycle) + ") Agent (" + myself.badPeoples[0] + " is already dead.";
-				}
-
-			}
-
+	// Update the bad people list
+	reflex recieve_msgs_from_guard when: !empty(informs) {
+		message inf <- informs[0];
+		if (inf.contents[0] = 'Removed') {
+			remove (inf.contents[1]) from: badPeoples;
+			write "Cycle (" + string(cycle) + ") Agent (" + name + ") Removed trouble maker (" + string(inf.contents[1]) + ")";
+			write "Cycle (" + string(cycle) + ") Agent (" + name + ") " + string(length(badPeoples)) + " complaint(s).";
 		}
 
 	} }
+
 	//------------------------------------------------------Information Centre Ends------------------------------------------------------
 // Food Shop.
 species FoodShop schedules: [] frequency: 0 {
