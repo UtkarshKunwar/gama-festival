@@ -440,7 +440,7 @@ species FestivalGuest skills: [moving, fipa] {
 		message inf <- informs[0];
 		write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform message from ' + agent(inf.sender).name + inf.contents;
 		if (!bad) {
-			do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK', 'I am not bad.']];
+			do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['I am Good']];
 		} else {
 			switch inf.contents[0] {
 				match leave_msgs[0] {
@@ -505,7 +505,7 @@ species SecurityGuard skills: [moving, fipa] {
 	bool hunting <- false;
 	bool eliminated <- false;
 	bool isCorrupt <- true;
-	bool isStrict <- false;
+	bool isStrict <- true;
 	float corruptness <- rnd(0.0, 1.0);
 	float strictness <- rnd(0.0, 1.0);
 	float wallet <- 0.0;
@@ -555,6 +555,13 @@ species SecurityGuard skills: [moving, fipa] {
 				targetPoint <- exitPoint;
 			}
 
+		} else if (req.contents[0] = 'I am Good') {
+
+		// Either the agent has bribed or change outlook i.e become good now
+			targetPoint <- securityGuardPoint;
+			eliminated <- true;
+			hunting <- false;
+			reached_bad_agent <- false;
 		}
 
 		// Remove the guy from list (even if he wasn't removed because he could not be found).
@@ -609,11 +616,9 @@ species SecurityGuard skills: [moving, fipa] {
 		targetPoint <- securityGuardPoint;
 		hunting <- false;
 		reached_bad_agent <- false;
-	}
+	} }
 
-}
-
-//------------------------------------------------------Security Guard Ends------------------------------------------------------
+	//------------------------------------------------------Security Guard Ends------------------------------------------------------
 //------------------------------------------------------Information Centre Begins------------------------------------------------------
 // Information Centre
 species InformationCentre skills: [fipa] {
@@ -668,8 +673,8 @@ species InformationCentre skills: [fipa] {
 					self.at_store <- true; // To reset the state of the person. No significance to reporting of bad person.
 					// Inform security guard to remove agents
 					do start_conversation with: [to::list(myself.sg_list), protocol::'fipa-contract-net', performative::'inform', contents::['Remove', myself.badPeoples[0]]];
-					write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") Bad Guy Reported by (" + self.name + ")";
-					write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") " + string(length(myself.badPeoples)) + " complaint(s).";
+					write "\nCycle (" + string(cycle) + ") Agent (" + myself.name + ") Bad Guy Reported by (" + self.name + ")";
+					write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") " + string(length(myself.badPeoples)) + " complaint(s)." + myself.badPeoples;
 				}
 
 			}
@@ -683,8 +688,8 @@ species InformationCentre skills: [fipa] {
 		message inf <- informs[0];
 		if (inf.contents[0] = 'Removed') {
 			remove (inf.contents[1]) from: badPeoples;
-			write "Cycle (" + string(cycle) + ") Agent (" + name + ") Removed trouble maker (" + string(inf.contents[1]) + ")";
-			write "Cycle (" + string(cycle) + ") Agent (" + name + ") " + string(length(badPeoples)) + " complaint(s).";
+			write "\nCycle (" + string(cycle) + ") Agent (" + name + ") Removed trouble maker (" + string(inf.contents[1]) + ")";
+			write "Cycle (" + string(cycle) + ") Agent (" + name + ") " + string(length(badPeoples)) + " complaint(s)." + badPeoples;
 		}
 
 	} }
