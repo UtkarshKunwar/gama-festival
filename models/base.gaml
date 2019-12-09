@@ -20,7 +20,7 @@ global {
 	float dance_speed <- 0.01;
 	float building_interaction_distance <- 2.0;
 	float guest_interaction_distance <- building_interaction_distance * 5;
-	int number_of_guests <- 10;
+	int number_of_guests <- 20;
 
 	// Globals for buildings.
 	point informationCentrePoint <- {worldDimension / 2.0, worldDimension / 2.0};
@@ -440,27 +440,32 @@ species FestivalGuest skills: [moving, fipa] {
 	reflex receive_inform_msgs when: !empty(informs) {
 		message inf <- informs[0];
 		write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform message from ' + agent(inf.sender).name + inf.contents;
-		switch inf.contents[0] {
-			match leave_msgs[0] {
+		if (!bad) {
+			do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK', 'I am not bad.']];
+		} else {
+			switch inf.contents[0] {
+				match leave_msgs[0] {
 
-			// fool guard and change location
-				write "Cycle (" + string(cycle) + ") Agent (" + name + ' fooled ' + agent(inf.sender).name;
-				do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
-				bad <- false; // turned into good guy
-				random_point <- {rnd(worldDimension), rnd(worldDimension)};
-				targetPoint <- random_point;
-			}
-
-			match leave_msgs[1] {
-			// bribe if you have some money
-				if (wallet > 100) {
-					write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to (" + agent(inf.sender).name + ")";
-					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
-				} else {
-				// sincerely go out
+				// fool guard and change location
+					write "Cycle (" + string(cycle) + ") Agent (" + name + ' fooled ' + agent(inf.sender).name;
 					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
-					leave <- true;
-					targetPoint <- exitPoint;
+					bad <- false; // turned into good guy
+					random_point <- {rnd(worldDimension), rnd(worldDimension)};
+					targetPoint <- random_point;
+				}
+
+				match leave_msgs[1] {
+				// bribe if you have some money
+					if (wallet > 100) {
+						write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to (" + agent(inf.sender).name + ")";
+						do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
+					} else {
+					// sincerely go out
+						do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
+						leave <- true;
+						targetPoint <- exitPoint;
+					}
+
 				}
 
 			}
