@@ -717,8 +717,8 @@ species SecurityGuard skills: [moving, fipa] {
 			hunting <- true;
 		} else {
 			write "Cycle (" + string(cycle) + ") Agent (" + badPeoples[0] + " is already dead.";
-			remove first(badPeoples) from: badPeoples;
 			do inform_information_centre(badPeoples[0]);
+			remove badPeoples[0] from: badPeoples;
 		}
 
 	}
@@ -753,9 +753,7 @@ species SecurityGuard skills: [moving, fipa] {
 		reached_bad_agent <- false;
 	} }
 
-}
-
-//------------------------------------------------------Security Guard Ends------------------------------------------------------
+	//------------------------------------------------------Security Guard Ends------------------------------------------------------
 
 
 //------------------------------------------------------Information Centre Begins------------------------------------------------------
@@ -885,8 +883,8 @@ experiment festival type: gui {
 			species ExitGate aspect: icon refresh: false;
 		}
 
-		//inspect "guest" value: FestivalGuest attributes: ["wallet"] type: table;
-		inspect "evil" value: EvilGuest attributes: ["wallet", "bad", "boredom"] type: table;
+		inspect "guest" value: FestivalGuest attributes: ["wallet"] type: table;
+		inspect "evil guest" value: EvilGuest attributes: ["wallet"] type: table;
 		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
 	}
 
