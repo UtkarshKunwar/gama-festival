@@ -29,6 +29,7 @@ global {
 	init {
 		seed <- #pi / 5; // Looked good.
 		create FestivalGuest number: number_of_guests;
+		create EvilGuest number: 1;
 		create InformationCentre number: 1 with: (name: "InformationCentre", location: informationCentrePoint);
 		create ExitGate number: 1 with: (name: "ExitGate", location: exitPoint);
 	}
@@ -82,10 +83,9 @@ species FestivalGuest skills: [moving, fipa] {
 	int max_boredom_count <- 3;
 	bool at_info <- false;
 	bool at_store <- false;
-	bool bad <- false;
 	bool near_bad <- false;
 	point bad_location <- nil;
-	FestivalGuest bad_agent <- nil;
+	EvilGuest bad_agent <- nil;
 	bool leave <- false;
 	list<point> foodPoints <- nil;
 	point foodPoint <- nil;
@@ -174,7 +174,7 @@ species FestivalGuest skills: [moving, fipa] {
 
 	// Dance.
 	reflex dance when: targetPoint = nil and !(hungry or thirsty) {
-		do wander speed: dance_speed * ((bad) ? 2 : 1) bounds: square(0.5 #m);
+		do wander speed: dance_speed bounds: square(0.5 #m);
 		moving <- false;
 
 		// Check if dancing with someone. If not then you get bored.
@@ -199,7 +199,7 @@ species FestivalGuest skills: [moving, fipa] {
 
 	// Move to a given point.
 	reflex moveToTarget when: targetPoint != nil {
-		do goto target: targetPoint speed: move_speed * ((bad) ? 2 : 1);
+		do goto target: targetPoint speed: move_speed;
 		moving <- true;
 	}
 
@@ -329,45 +329,15 @@ species FestivalGuest skills: [moving, fipa] {
 		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Random Point";
 	}
 
-	// Become bad with some probability after some time.
-	reflex comeToTheDarkSide when: !bad and mod(cycle, 1000) = 0 and length(FestivalGuest at_distance (guest_interaction_distance)) > 0 and !moving and targetPoint = nil {
-		bad <- flip(1.0 / number_of_guests);
-		if bad {
-			write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") has come to the dark side.";
-		}
-
-	}
-
-	// If you're bad, all normal guests priorities are removed.
-	reflex amIBad when: bad {
-		if icon_status != 3 {
-			my_icon <- image_file("../includes/data/bad.png");
-			icon_status <- 3;
-		}
-
-		hunger <- 0.0;
-		hungry <- false;
-		thirst <- 0.0;
-		thirsty <- false;
-		moving <- false;
-		near_bad <- false;
-		if leave {
-			targetPoint <- exitPoint;
-		} else {
-			targetPoint <- nil;
-		}
-
-	}
-
 	// Go and complain to the information centre if you're near a bad person.
-	reflex nearBadPerson when: !bad and !(hungry or thirsty or moving) {
-		list<FestivalGuest> neighbours <- FestivalGuest at_distance (guest_interaction_distance);
+	reflex nearBadPerson when: !(hungry or thirsty or moving) {
+		list<EvilGuest> neighbours <- EvilGuest at_distance (guest_interaction_distance);
 		loop neighbour over: neighbours {
 			ask neighbour {
-				if self.bad and !myself.bad {
+				if self.bad {
 					myself.near_bad <- true;
 					myself.targetPoint <- informationCentrePoint;
-					myself.bad_location <- self.location;
+					myself.bad_location <- self.location; // not needed
 					myself.bad_agent <- self;
 					break;
 				}
@@ -391,7 +361,7 @@ species FestivalGuest skills: [moving, fipa] {
 
 			loop neighbour over: neighbours {
 				ask neighbour {
-					if !self.bad and self.targetPoint = nil and !(self.hungry or self.thirsty) {
+					if self.targetPoint = nil and !(self.hungry or self.thirsty) {
 						myself.random_point <- self.location + {rnd(guest_interaction_distance), rnd(guest_interaction_distance)};
 						if float(myself.random_point.x) > worldDimension {
 							myself.random_point <- {worldDimension, myself.random_point.y};
@@ -416,8 +386,173 @@ species FestivalGuest skills: [moving, fipa] {
 						myself.boredom_count <- myself.boredom_count + 1;
 						//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") going to dance with (" + string(self.name) + ")";
 						break;
-					} else if self.bad {
-						boredom_count <- boredom_count + 1;
+					}
+
+				}
+
+			}
+
+		}
+
+	}
+
+	// Leave the place when at exit.
+	reflex leaveFestival when: leave and location distance_to (exitPoint) < building_interaction_distance {
+		write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") has left the event" + ((bored) ? " because he is bored." : ".");
+		do die;
+	}
+
+}
+
+//----------------------------------------------------Evil Guest begins---------------------------------------------------------
+species EvilGuest skills: [moving, fipa] {
+// Display icon of the person.
+	image_file my_icon <- image_file("../includes/data/bad.png");
+	float icon_size <- 1 #m;
+	int icon_status <- 0;
+
+	aspect icon {
+		draw my_icon size: 7 * icon_size;
+	}
+
+	float max_boredom <- 1.0;
+	float boredom_consum <- 0.00001;
+	float boredom <- 0.5;
+	point targetPoint <- nil;
+
+	// State variables.
+	bool moving <- false;
+	bool bored <- false;
+	int boredom_count <- 0;
+	int max_boredom_count <- 3;
+	bool leave <- false;
+	point random_point <- nil;
+	float distance_travelled <- 0.0;
+	float wallet <- rnd(100.0, 500.0);
+	bool bad <- false;
+
+	// Caluclates the distance travelled by the person.
+	reflex calculateDistance when: moving {
+		distance_travelled <- distance_travelled + move_speed * step;
+	}
+
+	// Become bad with some probability after some time.
+	reflex comeToTheDarkSide when: !bad and mod(cycle, 1000) = 0 and length(FestivalGuest at_distance (guest_interaction_distance)) > 0 and !moving and targetPoint = nil {
+		bad <- flip(1.0 / number_of_guests);
+		if bad {
+			write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") has come to the dark side.";
+		}
+
+	}
+
+	// Updates boredom values.
+	reflex updateBoredom {
+		if boredom >= 1.0 {
+			boredom <- 1.0;
+		} else if boredom <= 0.0 {
+			boredom <- 0.0;
+		} else {
+			boredom <- boredom + boredom_consum;
+		}
+
+	}
+
+	// Check if bored or not. Change icon accordingly. Don't change priority if already doing something.
+	reflex isBored when: !moving {
+		if boredom >= 1.0 {
+			bored <- true;
+			if icon_status != 4 {
+				my_icon <- image_file("../includes/data/bored.png");
+				icon_status <- 4;
+			}
+
+		} else {
+			bored <- false;
+			if icon_status != 0 {
+				my_icon <- image_file("../includes/data/bad.png");
+				icon_status <- 0;
+			}
+
+		}
+
+	}
+
+	// Dance.
+	reflex dance when: targetPoint = nil {
+		do wander speed: dance_speed * ((bad) ? 2 : 1) bounds: square(0.5 #m);
+		moving <- false;
+
+		// Check if dancing with someone. If not then you get bored.
+		list<FestivalGuest> neighbours <- (FestivalGuest at_distance guest_interaction_distance);
+		if length(neighbours) = 0 {
+			boredom_consum <- 0.00001;
+		} else {
+			loop neighbour over: neighbours {
+				ask neighbour {
+					if self.targetPoint = nil and !(self.hungry or self.thirsty) {
+						myself.boredom_consum <- -0.000008;
+						break;
+					}
+
+				}
+
+			}
+
+		}
+
+	}
+
+	// Move to a given point.
+	reflex moveToTarget when: targetPoint != nil {
+		do goto target: targetPoint speed: move_speed * ((bad) ? 2 : 1);
+		moving <- true;
+	}
+
+	// Check if at random point.
+	reflex atRandomPoint when: random_point != nil and location distance_to (random_point) < building_interaction_distance {
+		moving <- false;
+		random_point <- nil;
+		targetPoint <- nil;
+		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Random Point";
+	}
+
+	// Dance with the closest non-bad person when bored. If bored for too long then leave.
+	reflex onBored when: bored {
+		if boredom_count >= max_boredom_count {
+			leave <- true;
+			targetPoint <- exitPoint;
+		} else {
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance (5 * guest_interaction_distance);
+			if length(neighbours) = 0 {
+				boredom_count <- boredom_count + 1;
+			}
+
+			loop neighbour over: neighbours {
+				ask neighbour {
+					if self.targetPoint = nil and !(self.hungry or self.thirsty) {
+						myself.random_point <- self.location + {rnd(guest_interaction_distance), rnd(guest_interaction_distance)};
+						if float(myself.random_point.x) > worldDimension {
+							myself.random_point <- {worldDimension, myself.random_point.y};
+						}
+
+						if float(myself.random_point.y) > worldDimension {
+							myself.random_point <- {myself.random_point.x, worldDimension};
+						}
+
+						if float(myself.random_point.x) < 0.0 {
+							myself.random_point <- {0.0, myself.random_point.y};
+						}
+
+						if float(myself.random_point.y) < 0.0 {
+							myself.random_point <- {myself.random_point.x, 0.0};
+						}
+
+						myself.targetPoint <- myself.random_point;
+						myself.boredom <- 0.8;
+						myself.bored <- false;
+						myself.boredom_count <- myself.boredom_count + 1;
+						//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") going to dance with (" + string(self.name) + ")";
+						break;
 					}
 
 				}
@@ -491,8 +626,8 @@ species FestivalGuest skills: [moving, fipa] {
 
 }
 
+//----------------------------------------------------Evil Guest ends---------------------------------------------------------
 //------------------------------------------------------Security Guard Begins------------------------------------------------------
-// Security Guard
 species SecurityGuard skills: [moving, fipa] {
 // Display icon of the information centre.
 	image_file my_icon <- image_file("../includes/data/security.png");
@@ -511,10 +646,10 @@ species SecurityGuard skills: [moving, fipa] {
 	float wallet <- 0.0;
 	point securityGuardPoint <- location;
 	point targetPoint <- nil;
-	FestivalGuest bad_agent <- nil;
+	EvilGuest bad_agent <- nil;
 	list<string> leave_msgs <- ['Get out', 'GET OUT YOU F***R'];
 	bool reached_bad_agent <- false;
-	list<FestivalGuest> badPeoples <- [];
+	list<EvilGuest> badPeoples <- [];
 
 	// Move to a given point.
 	reflex moveToTarget when: targetPoint != nil {
@@ -570,7 +705,7 @@ species SecurityGuard skills: [moving, fipa] {
 	}
 
 	// action to inform information center
-	action inform_information_centre (FestivalGuest removed_agent) {
+	action inform_information_centre (EvilGuest removed_agent) {
 		do start_conversation with: [to::list(InformationCentre), protocol::'fipa-contract-net', performative::'inform', contents::['Removed', removed_agent]];
 	}
 
@@ -618,9 +753,12 @@ species SecurityGuard skills: [moving, fipa] {
 		reached_bad_agent <- false;
 	} }
 
-	//------------------------------------------------------Security Guard Ends------------------------------------------------------
+}
+
+//------------------------------------------------------Security Guard Ends------------------------------------------------------
+
+
 //------------------------------------------------------Information Centre Begins------------------------------------------------------
-// Information Centre
 species InformationCentre skills: [fipa] {
 // Display icon of the information centre.
 	image_file my_icon <- image_file("../includes/data/information_centre.png");
@@ -638,7 +776,7 @@ species InformationCentre skills: [fipa] {
 	list<point> foodPoints <- [];
 	list<point> drinksPoints <- [];
 	list<SecurityGuard> sg_list <- [];
-	list<FestivalGuest> badPeoples <- [];
+	list<EvilGuest> badPeoples <- [];
 	point securityGuardPoint <- informationCentrePoint + {-10.0, 0.0};
 
 	init {
@@ -695,6 +833,8 @@ species InformationCentre skills: [fipa] {
 	} }
 
 	//------------------------------------------------------Information Centre Ends------------------------------------------------------
+
+
 // Food Shop.
 species FoodShop schedules: [] frequency: 0 {
 // Display icon of the food shop.
@@ -737,6 +877,7 @@ experiment festival type: gui {
 	// Display map.
 		display myDisplay type: opengl {
 			species FestivalGuest aspect: icon;
+			species EvilGuest aspect: icon;
 			species InformationCentre aspect: icon refresh: false;
 			species FoodShop aspect: icon refresh: false;
 			species DrinksShop aspect: icon refresh: false;
@@ -744,8 +885,9 @@ experiment festival type: gui {
 			species ExitGate aspect: icon refresh: false;
 		}
 
-		inspect "guest" value: FestivalGuest attributes: ["bad_agent", "wallet"] type: table;
-		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict", "hunting", "reached_bad_agent"] type: table;
+		//inspect "guest" value: FestivalGuest attributes: ["wallet"] type: table;
+		inspect "evil" value: EvilGuest attributes: ["wallet", "bad", "boredom"] type: table;
+		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
 	}
 
 }
