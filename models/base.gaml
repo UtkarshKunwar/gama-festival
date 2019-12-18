@@ -850,11 +850,9 @@ species InformationCentre skills: [fipa] {
 		}
 
 	} }
-
 	//------------------------------------------------------Information Centre Ends------------------------------------------------------
 
-
-// Journalist
+//------------------------------------------------------Journalist Begins------------------------------------------------------
 species Journalist skills: [moving, fipa] {
 // Display icon of the food shop.
 	image_file my_icon <- image_file("../includes/data/journalist.png");
@@ -889,6 +887,17 @@ species Journalist skills: [moving, fipa] {
 	point drinksPoint <- nil;
 	point random_point <- nil;
 	point targetPoint <- nil;
+
+	// Stage variables
+	list<float> my_preferences <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
+	list<point> stage_locs <- nil;
+	list<float> stage_utility <- nil;
+	list<string> stages <- nil;
+	point best_stage_loc <- nil;
+	string best_stage <- nil;
+	float best_utility <- 0.0;
+	list<string> acts <- nil;
+	string best_act <- nil;
 
 	// Check if hungry or not. Don't change priority if already doing something.
 	reflex isHungry when: !(thirsty or moving) {
@@ -1115,6 +1124,65 @@ species Journalist skills: [moving, fipa] {
 		write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((curious) ? " because he is not curious anymore." : ".");
 		do die;
 	}
+	// Reacting to Stages Invite------------------------
+	// Utility function
+	float get_utility (list<float> act_attributes) {
+	// Add a more complex function for utility with atleast 6 variables
+		float
+		utility <- act_attributes[0] * my_preferences[0] + act_attributes[1] * my_preferences[1] + act_attributes[2] * my_preferences[2] + act_attributes[3] * my_preferences[3] + act_attributes[4] * my_preferences[4] + act_attributes[5] * my_preferences[5];
+		return utility;
+	}
+
+	bool choose_stage <- false;
+	// Read inform msgs from stages.
+	reflex receive_inform_messages when: !empty(informs) and !interviewing {
+		write '\n(Time ' + time + '): ' + name + ' receives inform messages.';
+		//write '\t(Time ' + time + '): ' + informs;
+		float max_utility <- 0.0;
+		stage_utility <- nil;
+		stage_locs <- nil;
+		int stage_count <- 0;
+		loop information over: informs {
+			if (string(information.contents[0]) = 'Invitation') {
+				stage_count <- stage_count + 1;
+				// Evaluate utility of the act
+				float current_utility <- get_utility(information.contents[1]);
+				stage_utility <+ current_utility;
+				stage_locs <+ agent(information.sender).location;
+				stages <+ agent(information.sender).name;
+				acts <+ information.contents[2];
+				write '\t(Time ' + time + '): ' + agent(information.sender).name + ' utility: ' + current_utility;
+				// keep track of best stages
+				if (current_utility > max_utility) {
+					max_utility <- current_utility;
+					best_stage_loc <- agent(information.sender).location;
+					best_stage <- agent(information.sender).name;
+					best_act <- information.contents[2];
+				}
+
+			} else if (string(information.contents[0]) = 'Act ends') {
+				choose_stage <- false;
+				random_point <- {rnd(worldDimension), rnd(worldDimension)};
+				targetPoint <- random_point;
+			}
+
+		}
+
+		// when all stages invitations are considered, go to best one
+		if (stage_count = 3) {
+			choose_stage <- true;
+		}
+
+	}
+
+	// Go to best stage
+	reflex gotoBestStage when: choose_stage {
+		targetPoint <- best_stage_loc;
+		targetPoint <- {targetPoint.x + rnd(-10, 10), targetPoint.y + rnd(8, 10)};
+		best_utility <- stage_utility[stage_locs index_of (best_stage_loc)];
+		write '\t(Time ' + time + '): ' + 'My choice: ' + best_stage + " with utility " + best_utility;
+		choose_stage <- false;
+	}
 
 }
 
@@ -1163,7 +1231,7 @@ species Stage skills: [fipa] {
 	list<float> act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
 
 	//Send invitation to all guests in the festival to join auction.
-	reflex informGuestsAboutActs when: mod(int(time), act_duration) = 0 {
+	reflex informGuestsAboutActs when: mod(int(time), act_duration) = 10000 {
 		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
 		role <- any(['band', 'singer', 'dancer']);
 		do start_conversation with:
