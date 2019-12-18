@@ -1,2 +1,6 @@
 # GAMA Platform specific files.
 .project
+
+includes/.DS_Store
+
+.DS_Store
