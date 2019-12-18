@@ -1136,7 +1136,7 @@ species Journalist skills: [moving, fipa] {
 	bool choose_stage <- false;
 	// Read inform msgs from stages.
 	reflex receive_inform_messages when: !empty(informs) and !interviewing {
-		write '\n(Time ' + time + '): ' + name + ' receives inform messages.';
+		write '\n(Time ' + time + '): ' + name + ' receives inform messages.' + informs;
 		//write '\t(Time ' + time + '): ' + informs;
 		float max_utility <- 0.0;
 		stage_utility <- nil;
@@ -1226,16 +1226,25 @@ species ExitGate schedules: [] frequency: 0 {
 species Stage skills: [fipa] {
 
 // Stage variables
-	int act_duration <- 20000;
+	int act_duration <- 10000;
+	int rest_duration <- 20000;
+	bool showing_act <- false;
 	string role <- nil;
 	list<float> act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
 
-	//Send invitation to all guests in the festival to join auction.
-	reflex informGuestsAboutActs when: mod(int(time), act_duration) = 10000 {
+	//Send invitation to all guests in the festival to join stage shows.
+	reflex informGuestsAboutActs when: mod(int(time), (act_duration + rest_duration)) = 0 and int(time) > 0 {
+		showing_act <- true;
 		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
 		role <- any(['band', 'singer', 'dancer']);
-		do start_conversation with:
-		[to::list(FestivalGuest + EvilGuest + Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
+		do start_conversation with: [to::list(Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
+	}
+
+	//Send end information to all guests in the festival to leave stage shows.
+	reflex informGuestsActsEnding when: showing_act and mod(int(time), act_duration) = 0 and mod(int(time), (act_duration + rest_duration)) != 0 {
+		write '\n(Time ' + time + '): ' + name + ' sends a act closure to all the guests.';
+		do start_conversation with: [to::list(Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Act ends', act_attributes, role]];
+		showing_act <- false;
 	}
 
 	// Change act attributes once it ends
@@ -1247,12 +1256,22 @@ species Stage skills: [fipa] {
 	list<rgb> mycolors <- [rgb(192, 252, 15, 100), rgb(15, 192, 252, 100), rgb(252, 15, 192, 100)];
 
 	aspect icon {
-		draw my_icon size: 7 * 2;
+		draw my_icon size: 10;
 	}
 
 	// Display character of the guest.
 	aspect range {
-		draw circle(12) color: mycolors[1] border: #black;
+		switch showing_act {
+			match true {
+				draw circle(8) color: any(mycolors) border: #black;
+			}
+
+			default {
+				draw circle(8) color: mycolors[1] border: #black;
+			}
+
+		}
+
 	}
 
 }
@@ -1274,10 +1293,11 @@ experiment festival type: gui {
 			species Stage aspect: icon;
 		}
 
-		inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
-		inspect "guest" value: FestivalGuest attributes: ["wallet"] type: table;
-		inspect "evil guest" value: EvilGuest attributes: ["wallet"] type: table;
-		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
+		//		inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
+		//		inspect "guest" value: FestivalGuest attributes: ["wallet"] type: table;
+		//		inspect "evil guest" value: EvilGuest attributes: ["wallet"] type: table;
+		//		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
+		inspect "stage" value: Stage attributes: ["showing_act"] type: table;
 	}
 
 }
