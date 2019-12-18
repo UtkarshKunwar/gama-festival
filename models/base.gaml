@@ -11,33 +11,34 @@ global {
 	geometry worldShape <- square(worldDimension);
 	float step <- 1 #s;
 
-    // Globals for people.
-    float max_hunger <- 1.0;
-    float max_thirst <- 1.0;
-    float hunger_consum <- 0.00001;
-    float thirst_consum <- 0.00001;
-    float move_speed <- 0.01;
-    float dance_speed <- 0.01;
-    float building_interaction_distance <- 2.0;
-    float guest_interaction_distance <- building_interaction_distance * 5;
-    int number_of_guests <- 10;
-    int number_of_journalists <- 3;
-    int number_of_evil_guys <- 3;
+	// Globals for people.
+	float max_hunger <- 1.0;
+	float max_thirst <- 1.0;
+	float hunger_consum <- 0.00001;
+	float thirst_consum <- 0.00001;
+	float move_speed <- 0.01;
+	float dance_speed <- 0.01;
+	float building_interaction_distance <- 2.0;
+	float guest_interaction_distance <- building_interaction_distance * 5;
+	int number_of_guests <- 10;
+	int number_of_journalists <- 3;
+	int number_of_evil_guys <- 3;
 
 	// Globals for buildings.
 	point informationCentrePoint <- {worldDimension / 2.0, worldDimension / 2.0};
 	point exitPoint <- {worldDimension, worldDimension / 2.0};
 
-    init {
-    	seed <- #pi / 5; // Looked good.
-    	create FestivalGuest number: number_of_guests;
-    	create InformationCentre number: 1 with: (name: "InformationCentre", location: informationCentrePoint);
-    	create Journalist number: number_of_journalists;
+	init {
+		seed <- #pi / 5; // Looked good.
+		create FestivalGuest number: number_of_guests;
+		create InformationCentre number: 1 with: (name: "InformationCentre", location: informationCentrePoint);
+		create Journalist number: number_of_journalists;
 		create EvilGuest number: number_of_evil_guys;
-    	create ExitGate number: 1 with: (name: "ExitGate", location: exitPoint);
-    }
+		create ExitGate number: 1 with: (name: "ExitGate", location: exitPoint);
+	}
 
 	int max_cycles <- 300000;
+
 	reflex stop when: cycle = max_cycles {
 		write "Paused.";
 		do pause;
@@ -101,25 +102,27 @@ species FestivalGuest skills: [moving, fipa] {
 	// Caluclates the distance travelled by the person.
 	reflex calculateDistance when: moving {
 		distance_travelled <- distance_travelled + move_speed * step;
-	}		
+	}
 
-    // Check if hungry or not. Change icon accordingly. Don't change priority if already doing something.
-    reflex isHungry when: !(thirsty or moving){
-    	if hunger = 1.0 {
-    		hungry <- true;
-    	} else {
-    		hungry <- false;
-    	}
-    }
+	// Check if hungry or not. Change icon accordingly. Don't change priority if already doing something.
+	reflex isHungry when: !(thirsty or moving) {
+		if hunger = 1.0 {
+			hungry <- true;
+		} else {
+			hungry <- false;
+		}
 
-    // Check if thirsty or not. Change icon accordingly. Don't change priority if already doing something.
-    reflex isThirsty when: !(hungry or moving) {
-    	if thirst = 1.0 {
-    		thirsty <- true;
-    	} else {
-    		thirsty <- false;
-    	}
-    }
+	}
+
+	// Check if thirsty or not. Change icon accordingly. Don't change priority if already doing something.
+	reflex isThirsty when: !(hungry or moving) {
+		if thirst = 1.0 {
+			thirsty <- true;
+		} else {
+			thirsty <- false;
+		}
+
+	}
 
 	// Updates boredom values.
 	reflex updateBoredom {
@@ -133,9 +136,9 @@ species FestivalGuest skills: [moving, fipa] {
 
 	}
 
-    reflex isBeingInterviewed when: being_interviewed and mod(cycle, 10000) = 0 {
-    	being_interviewed <- false;
-    }
+	reflex isBeingInterviewed when: being_interviewed and mod(cycle, 10000) = 0 {
+		being_interviewed <- false;
+	}
 
 	// Check if bored or not. Change icon accordingly. Don't change priority if already doing something.
 	reflex isBored when: !(hungry or thirsty or moving) {
@@ -173,9 +176,13 @@ species FestivalGuest skills: [moving, fipa] {
 						myself.boredom_consum <- -0.000008;
 						break;
 					}
+
 				}
+
 			}
+
 		}
+
 	}
 
 	// Move to a given point.
@@ -206,53 +213,62 @@ species FestivalGuest skills: [moving, fipa] {
     		 * Ask from a list of neighbours around you and if they know the location
     		 * then go to that location instead of going to the information centre.
     		 */
-    		list<FestivalGuest> neighbours <- FestivalGuest at_distance(guest_interaction_distance);
-    		loop neighbour over: neighbours {
-    			ask neighbour {
-    				if myself.hungry and self.foodPoint != nil {
-    					myself.foodPoints <- self.foodPoints;
-    					myself.foodPoint <- any(myself.foodPoints);
-    					myself.targetPoint <- myself.foodPoint;
-    					myself.at_info <- true;
-    					asked <- true;
-    					break;
-    				} else if myself.thirsty and self.drinksPoint != nil {
-    					myself.drinksPoints <- self.drinksPoints;
-    					myself.drinksPoint <- any(myself.drinksPoints);
-    					myself.targetPoint <- myself.drinksPoint;
-    					myself.at_info <- true;
-    					asked <- true;
-    					break;
-    				}
-    			}
-    		}
-    		if !asked {
-    			targetPoint <- informationCentrePoint;
-    		}
-    	}
-    }
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance (guest_interaction_distance);
+			loop neighbour over: neighbours {
+				ask neighbour {
+					if myself.hungry and self.foodPoint != nil {
+						myself.foodPoints <- self.foodPoints;
+						myself.foodPoint <- any(myself.foodPoints);
+						myself.targetPoint <- myself.foodPoint;
+						myself.at_info <- true;
+						asked <- true;
+						break;
+					} else if myself.thirsty and self.drinksPoint != nil {
+						myself.drinksPoints <- self.drinksPoints;
+						myself.drinksPoint <- any(myself.drinksPoints);
+						myself.targetPoint <- myself.drinksPoint;
+						myself.at_info <- true;
+						asked <- true;
+						break;
+					}
 
-    // Check if at information centre.
-    reflex atInformationCentre when: (hungry or thirsty) and !at_info and location distance_to(informationCentrePoint) < building_interaction_distance and !at_store {
-    	at_info <- true;
-    	moving <- false;
-    }
+				}
 
-    // Get store location from information centre.
-    reflex getStoreLocation when: (hungry or thirsty) and at_info and !at_store {
-    	ask InformationCentre {
-   			// Ask for food/drink when hungry/thirsty and don't know the location.
-    		if myself.hungry and myself.foodPoint = nil {
-    			myself.foodPoints <- self.foodPoints;
-    			myself.foodPoint <- any(myself.foodPoints);
-    			myself.targetPoint <- myself.foodPoint;
-    		} if myself.thirsty and myself.drinksPoint = nil {
-    			myself.drinksPoints <- self.drinksPoints;
-    			myself.drinksPoint <- any(myself.drinksPoints);
-    			myself.targetPoint <- myself.drinksPoint;
-    		}
-    	}
-    }
+			}
+
+			if !asked {
+				targetPoint <- informationCentrePoint;
+			}
+
+		}
+
+	}
+
+	// Check if at information centre.
+	reflex atInformationCentre when: (hungry or thirsty) and !at_info and location distance_to (informationCentrePoint) < building_interaction_distance and !at_store {
+		at_info <- true;
+		moving <- false;
+	}
+
+	// Get store location from information centre.
+	reflex getStoreLocation when: (hungry or thirsty) and at_info and !at_store {
+		ask InformationCentre {
+		// Ask for food/drink when hungry/thirsty and don't know the location.
+			if myself.hungry and myself.foodPoint = nil {
+				myself.foodPoints <- self.foodPoints;
+				myself.foodPoint <- any(myself.foodPoints);
+				myself.targetPoint <- myself.foodPoint;
+			}
+
+			if myself.thirsty and myself.drinksPoint = nil {
+				myself.drinksPoints <- self.drinksPoints;
+				myself.drinksPoint <- any(myself.drinksPoints);
+				myself.targetPoint <- myself.drinksPoint;
+			}
+
+		}
+
+	}
 
 	// Check if at information centre.
 	reflex atInformationCentre when: (hungry or thirsty) and !at_info and location distance_to (informationCentrePoint) < building_interaction_distance and !at_store {
@@ -260,15 +276,15 @@ species FestivalGuest skills: [moving, fipa] {
 		moving <- false;
 		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Information Centre";
 	}
-	
-    // Check if at random point.
-    reflex atRandomPoint when: at_store and random_point != nil and location distance_to(random_point) < building_interaction_distance {
-    	at_store <- false;
-    	at_info <- false;
-    	moving <- false;
-    	random_point <- nil;
-    	targetPoint <- nil;
-    }
+
+	// Check if at random point.
+	reflex atRandomPoint when: at_store and random_point != nil and location distance_to (random_point) < building_interaction_distance {
+		at_store <- false;
+		at_info <- false;
+		moving <- false;
+		random_point <- nil;
+		targetPoint <- nil;
+	}
 
 	// Check if at store and get food and replenish health at the food store.
 	reflex atFoodStoreLocation when: hungry and at_info and foodPoint != nil and location distance_to (foodPoint) < building_interaction_distance {
@@ -297,7 +313,7 @@ species FestivalGuest skills: [moving, fipa] {
 		hungry <- false;
 		boredom <- boredom / 1.2;
 		bored <- false;
-    	want_to_be_interviewed <- flip(0.5);
+		want_to_be_interviewed <- flip(0.5);
 		random_point <- {rnd(worldDimension), rnd(worldDimension)};
 		targetPoint <- random_point;
 		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Drinks Point";
@@ -350,12 +366,15 @@ species FestivalGuest skills: [moving, fipa] {
 						if myself.random_point.x > worldDimension {
 							myself.random_point <- {worldDimension, myself.random_point.y};
 						}
+
 						if myself.random_point.y > worldDimension {
 							myself.random_point <- {myself.random_point.x, worldDimension};
 						}
+
 						if myself.random_point.x < 0.0 {
 							myself.random_point <- {0.0, myself.random_point.y};
 						}
+
 						if myself.random_point.y < 0.0 {
 							myself.random_point <- {myself.random_point.x, 0.0};
 						}
@@ -368,16 +387,21 @@ species FestivalGuest skills: [moving, fipa] {
 						write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") going to dance with (" + self.name + ")";
 						break;
 					}
+
 				}
+
 			}
+
 		}
+
 	}
 
-    // Leave the place when at exit.
-    reflex leaveFestival when: leave and location distance_to(exitPoint) < building_interaction_distance {
-    	write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((bored) ? " because he is bored." : ".");
-    	do die;
-    }
+	// Leave the place when at exit.
+	reflex leaveFestival when: leave and location distance_to (exitPoint) < building_interaction_distance {
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((bored) ? " because he is bored." : ".");
+		do die;
+	}
+
 }
 
 //----------------------------------------------------Evil Guest begins---------------------------------------------------------
@@ -555,7 +579,7 @@ species EvilGuest skills: [moving, fipa] {
 		} else {
 			switch inf.contents[0] {
 				match leave_msgs[0] {
-
+				// Not strict guard
 				// fool guard and change location
 					write "Cycle (" + string(cycle) + ") Agent (" + name + ' fooled ' + agent(inf.sender).name;
 					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
@@ -565,6 +589,7 @@ species EvilGuest skills: [moving, fipa] {
 				}
 
 				match leave_msgs[1] {
+				// Strict guard
 				// bribe if you have some money
 					if (wallet > 100) {
 						write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to (" + agent(inf.sender).name + ")";
@@ -602,7 +627,7 @@ species EvilGuest skills: [moving, fipa] {
 
 }
 
-//----------------------------------------------------Evil Guest ends---------------------------------------------------------
+//----------------------------------------------------Evil Guest Ends---------------------------------------------------------
 //------------------------------------------------------Security Guard Begins------------------------------------------------------
 species SecurityGuard skills: [moving, fipa] {
 // Display icon of the information centre.
@@ -615,10 +640,10 @@ species SecurityGuard skills: [moving, fipa] {
 
 	bool hunting <- false;
 	bool eliminated <- false;
-	bool isCorrupt <- true;
-	bool isStrict <- true;
 	float corruptness <- rnd(0.0, 1.0);
 	float strictness <- rnd(0.0, 1.0);
+	bool isCorrupt <- flip(corruptness);
+	bool isStrict <- flip(strictness);
 	float wallet <- 0.0;
 	point securityGuardPoint <- location;
 	point targetPoint <- nil;
@@ -630,6 +655,14 @@ species SecurityGuard skills: [moving, fipa] {
 	// Move to a given point.
 	reflex moveToTarget when: targetPoint != nil {
 		do goto target: targetPoint speed: move_speed * 2;
+	}
+
+	// Reflex change corruptness and strictness behaviors 
+	reflex courrupt_strict_modify when: (mod(int(time), 10000) = 0) {
+		corruptness <- rnd(0.0, 1.0);
+		strictness <- rnd(0.0, 1.0);
+		isCorrupt <- flip(corruptness);
+		isStrict <- flip(strictness);
 	}
 
 	// Update wallet money for English Auction
@@ -788,6 +821,7 @@ species InformationCentre skills: [fipa] {
 					write "\nCycle (" + string(cycle) + ") Agent (" + myself.name + ") Bad Guy Reported by (" + self.name + ")";
 					write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") " + string(length(myself.badPeoples)) + " complaint(s)." + myself.badPeoples;
 				}
+
 			}
 
 		}
@@ -809,218 +843,229 @@ species InformationCentre skills: [fipa] {
 
 
 // Journalist
-species Journalist skills: [moving, fipa]
-{
-	// Display icon of the food shop.
-    image_file my_icon <- image_file("../includes/data/journalist.png");
-    float icon_size <- 1#m;
-    aspect icon {
-        draw my_icon size: 7 * icon_size;
-    }
+species Journalist skills: [moving, fipa] {
+// Display icon of the food shop.
+	image_file my_icon <- image_file("../includes/data/journalist.png");
+	float icon_size <- 1 #m;
 
-    float max_curious <- 1.0;
-    float curiosity_consum <- 0.00001;
+	aspect icon {
+		draw my_icon size: 7 * icon_size;
+	}
 
-    // Hunger and thirst updates.
-    float hunger <- rnd(max_hunger) update: hunger + 0.5 * hunger_consum max: max_hunger;
-    float thirst <- rnd(max_thirst) update: thirst + 0.5 * thirst_consum max: max_thirst;
-    float curiosity <- rnd(0.2, max_curious) update: curiosity - curiosity_consum min: 0.0 max: max_curious;
+	float max_curious <- 1.0;
+	float curiosity_consum <- 0.00001;
 
-    // State variables.
-    bool hungry <- false;
-    bool thirsty <- false;
-    bool curious <- true;
-    bool moving <- false;
-    bool at_info <- false;
-    bool at_store <- false;
-    bool leave <- false;
-    int interviewed_count <- 0;
-    int max_interviewed_count <- int(number_of_guests / 2.5);
-    bool interviewing <- false;
+	// Hunger and thirst updates.
+	float hunger <- rnd(max_hunger) update: hunger + 0.5 * hunger_consum max: max_hunger;
+	float thirst <- rnd(max_thirst) update: thirst + 0.5 * thirst_consum max: max_thirst;
+	float curiosity <- rnd(0.2, max_curious) update: curiosity - curiosity_consum min: 0.0 max: max_curious;
 
-    list<point> foodPoints <- nil;
-    point foodPoint <- nil;
-    list<point> drinksPoints <- nil;
-    point drinksPoint <- nil;
-    point random_point <- nil;
+	// State variables.
+	bool hungry <- false;
+	bool thirsty <- false;
+	bool curious <- true;
+	bool moving <- false;
+	bool at_info <- false;
+	bool at_store <- false;
+	bool leave <- false;
+	int interviewed_count <- 0;
+	int max_interviewed_count <- int(number_of_guests / 2.5);
+	bool interviewing <- false;
+	list<point> foodPoints <- nil;
+	point foodPoint <- nil;
+	list<point> drinksPoints <- nil;
+	point drinksPoint <- nil;
+	point random_point <- nil;
+	point targetPoint <- nil;
 
-    point targetPoint <- nil;
+	// Check if hungry or not. Don't change priority if already doing something.
+	reflex isHungry when: !(thirsty or moving) {
+		if hunger = 1.0 {
+			hungry <- true;
+		} else {
+			hungry <- false;
+		}
 
-    // Check if hungry or not. Don't change priority if already doing something.
-    reflex isHungry when: !(thirsty or moving){
-    	if hunger = 1.0 {
-    		hungry <- true;
-    	} else {
-    		hungry <- false;
-    	}
-    }
+	}
 
-    // Check if thirsty or not. Don't change priority if already doing something.
-    reflex isThirsty when: !(hungry or moving) {
-    	if thirst = 1.0 {
-    		thirsty <- true;
-    	} else {
-    		thirsty <- false;
-    	}
-    }
+	// Check if thirsty or not. Don't change priority if already doing something.
+	reflex isThirsty when: !(hungry or moving) {
+		if thirst = 1.0 {
+			thirsty <- true;
+		} else {
+			thirsty <- false;
+		}
 
-    // Check if curious or not. Don't change priority if already doing something.
-    reflex isCurious when: !(hungry or thirsty or moving) {
-    	if curiosity = 0.0 {
-    		curious <- false;
-    	} else {
-    		curious <- true;
-    	}
-    }
+	}
 
-    // Move to a given point.
-    reflex moveToTarget when: targetPoint != nil {
-    	do goto target: targetPoint speed: move_speed * ((curious) ? 2 : 1);
-    	moving <- true;
-    }
+	// Check if curious or not. Don't change priority if already doing something.
+	reflex isCurious when: !(hungry or thirsty or moving) {
+		if curiosity = 0.0 {
+			curious <- false;
+		} else {
+			curious <- true;
+		}
 
-    // Go to information centre if hungry or thirsty.
-    reflex goToInformationCentre when: (hungry or thirsty) and !at_info {
-    	/*
+	}
+
+	// Move to a given point.
+	reflex moveToTarget when: targetPoint != nil {
+		do goto target: targetPoint speed: move_speed * ((curious) ? 2 : 1);
+		moving <- true;
+	}
+
+	// Go to information centre if hungry or thirsty.
+	reflex goToInformationCentre when: (hungry or thirsty) and !at_info {
+	/*
     	 * If already remember the point you've been to then go to there
     	 * directly instead of going to the information centre. Since,
     	 * you've already been to the information centre, the state can
     	 * be skipped/extended.
     	 */
-    	if hungry and foodPoint != nil {
-    		foodPoint <- any(foodPoints);
-    		targetPoint <- foodPoint;
-    		at_info <- true;
-    	} else if thirsty and drinksPoint != nil {
-    		drinksPoint <- any(drinksPoints);
-    		targetPoint <- drinksPoint;
-    		at_info <- true;
-    	} else {
-    		bool asked <- false;
-    		/*
+		if hungry and foodPoint != nil {
+			foodPoint <- any(foodPoints);
+			targetPoint <- foodPoint;
+			at_info <- true;
+		} else if thirsty and drinksPoint != nil {
+			drinksPoint <- any(drinksPoints);
+			targetPoint <- drinksPoint;
+			at_info <- true;
+		} else {
+			bool asked <- false;
+			/*
     		 * Ask from a list of neighbours around you and if they know the location
     		 * then go to that location instead of going to the information centre.
     		 */
-    		list<FestivalGuest> neighbours <- FestivalGuest at_distance(guest_interaction_distance);
-    		loop neighbour over: neighbours {
-    			ask neighbour {
-    				if myself.hungry and self.foodPoint != nil {
-    					myself.foodPoints <- self.foodPoints;
-    					myself.foodPoint <- any(myself.foodPoints);
-    					myself.targetPoint <- myself.foodPoint;
-    					myself.at_info <- true;
-    					asked <- true;
-    					break;
-    				} else if myself.thirsty and self.drinksPoint != nil {
-    					myself.drinksPoints <- self.drinksPoints;
-    					myself.drinksPoint <- any(myself.drinksPoints);
-    					myself.targetPoint <- myself.drinksPoint;
-    					myself.at_info <- true;
-    					asked <- true;
-    					break;
-    				}
-    			}
-    		}
-    		if !asked {
-    			targetPoint <- informationCentrePoint;
-    		}
-    	}
-    }
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance (guest_interaction_distance);
+			loop neighbour over: neighbours {
+				ask neighbour {
+					if myself.hungry and self.foodPoint != nil {
+						myself.foodPoints <- self.foodPoints;
+						myself.foodPoint <- any(myself.foodPoints);
+						myself.targetPoint <- myself.foodPoint;
+						myself.at_info <- true;
+						asked <- true;
+						break;
+					} else if myself.thirsty and self.drinksPoint != nil {
+						myself.drinksPoints <- self.drinksPoints;
+						myself.drinksPoint <- any(myself.drinksPoints);
+						myself.targetPoint <- myself.drinksPoint;
+						myself.at_info <- true;
+						asked <- true;
+						break;
+					}
 
-    // Check if at information centre.
-    reflex atInformationCentre when: (hungry or thirsty) and !at_info and location distance_to(informationCentrePoint) < building_interaction_distance and !at_store {
-    	at_info <- true;
-    	moving <- false;
-    }
+				}
 
-    // Get store location from information centre.
-    reflex getStoreLocation when: (hungry or thirsty) and at_info and !at_store {
-    	ask InformationCentre {
-   			// Ask for food/drink when hungry/thirsty and don't know the location.
-    		if myself.hungry and myself.foodPoint = nil {
-    			myself.foodPoints <- self.foodPoints;
-    			myself.foodPoint <- any(myself.foodPoints);
-    			myself.targetPoint <- myself.foodPoint;
-    		} if myself.thirsty and myself.drinksPoint = nil {
-    			myself.drinksPoints <- self.drinksPoints;
-    			myself.drinksPoint <- any(myself.drinksPoints);
-    			myself.targetPoint <- myself.drinksPoint;
-    		}
-    	}
-    }
+			}
 
-    // Check if at store and get food and replenish health at the food store.
-    reflex atFoodStoreLocation when: hungry and at_info and foodPoint != nil and location distance_to(foodPoint) < building_interaction_distance {
-    	at_store <- true;
-    	at_info <- false;
-    	moving <- false;
+			if !asked {
+				targetPoint <- informationCentrePoint;
+			}
 
-    	hunger <- 0.0;
-    	hungry <- false;
-    	thirst <- thirst / 1.5; // When you're full you feel like drinking less.
-    	thirsty <- false;
-    	curiosity <- curiosity + 0.2;
-    	curious <- true;
+		}
 
-    	random_point <- {rnd(worldDimension), rnd(worldDimension)};
-    	targetPoint <- random_point;
-    }
+	}
 
-    // Check if at store and get drinks and replenish health at the drinks store.
-    reflex atDrinksStoreLocation when: thirsty and at_info and drinksPoint != nil and location distance_to(drinksPoint) < building_interaction_distance {
-    	at_store <- true;
-    	at_info <- false;
-    	moving <- false;
+	// Check if at information centre.
+	reflex atInformationCentre when: (hungry or thirsty) and !at_info and location distance_to (informationCentrePoint) < building_interaction_distance and !at_store {
+		at_info <- true;
+		moving <- false;
+	}
 
-    	thirst <- 0.0;
-    	thirsty <- false;
-    	hunger <- hunger / 2.0; // When you drink a lot you feel like eating less.
-    	hungry <- false;
-    	curiosity <- curiosity + 0.2;
-    	curious <- true;
+	// Get store location from information centre.
+	reflex getStoreLocation when: (hungry or thirsty) and at_info and !at_store {
+		ask InformationCentre {
+		// Ask for food/drink when hungry/thirsty and don't know the location.
+			if myself.hungry and myself.foodPoint = nil {
+				myself.foodPoints <- self.foodPoints;
+				myself.foodPoint <- any(myself.foodPoints);
+				myself.targetPoint <- myself.foodPoint;
+			}
 
-    	random_point <- {rnd(worldDimension), rnd(worldDimension)};
-    	targetPoint <- random_point;
-    }
+			if myself.thirsty and myself.drinksPoint = nil {
+				myself.drinksPoints <- self.drinksPoints;
+				myself.drinksPoint <- any(myself.drinksPoints);
+				myself.targetPoint <- myself.drinksPoint;
+			}
 
-    // Check if at random point.
-    reflex atRandomPoint when: at_store and random_point != nil and location distance_to(random_point) < building_interaction_distance {
-    	at_store <- false;
-    	at_info <- false;
-    	moving <- false;
-    	random_point <- nil;
-    	targetPoint <- nil;
-    }
+		}
 
-    // Interview the closest person. If no person then leave.
-    reflex interview when: curious and !interviewing and !moving {
-    	if interviewed_count >= max_interviewed_count {
-	    	leave <- true;
-	    	targetPoint <- exitPoint;
-    	} else {
-    		list<FestivalGuest> neighbours <- FestivalGuest at_distance(5 * guest_interaction_distance);
-    		if length(neighbours) = 0 {
-    			neighbours <- list(FestivalGuest closest_to(location));
-    		}
-    		if neighbours[0] = nil {
-    				leave <- true;
-    				targetPoint <- exitPoint;
-    		} else {
+	}
+
+	// Check if at store and get food and replenish health at the food store.
+	reflex atFoodStoreLocation when: hungry and at_info and foodPoint != nil and location distance_to (foodPoint) < building_interaction_distance {
+		at_store <- true;
+		at_info <- false;
+		moving <- false;
+		hunger <- 0.0;
+		hungry <- false;
+		thirst <- thirst / 1.5; // When you're full you feel like drinking less.
+		thirsty <- false;
+		curiosity <- curiosity + 0.2;
+		curious <- true;
+		random_point <- {rnd(worldDimension), rnd(worldDimension)};
+		targetPoint <- random_point;
+	}
+
+	// Check if at store and get drinks and replenish health at the drinks store.
+	reflex atDrinksStoreLocation when: thirsty and at_info and drinksPoint != nil and location distance_to (drinksPoint) < building_interaction_distance {
+		at_store <- true;
+		at_info <- false;
+		moving <- false;
+		thirst <- 0.0;
+		thirsty <- false;
+		hunger <- hunger / 2.0; // When you drink a lot you feel like eating less.
+		hungry <- false;
+		curiosity <- curiosity + 0.2;
+		curious <- true;
+		random_point <- {rnd(worldDimension), rnd(worldDimension)};
+		targetPoint <- random_point;
+	}
+
+	// Check if at random point.
+	reflex atRandomPoint when: at_store and random_point != nil and location distance_to (random_point) < building_interaction_distance {
+		at_store <- false;
+		at_info <- false;
+		moving <- false;
+		random_point <- nil;
+		targetPoint <- nil;
+	}
+
+	// Interview the closest person. If no person then leave.
+	reflex interview when: curious and !interviewing and !moving {
+		if interviewed_count >= max_interviewed_count {
+			leave <- true;
+			targetPoint <- exitPoint;
+		} else {
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance (5 * guest_interaction_distance);
+			if length(neighbours) = 0 {
+				neighbours <- list(FestivalGuest closest_to (location));
+			}
+
+			if neighbours[0] = nil {
+				leave <- true;
+				targetPoint <- exitPoint;
+			} else {
 				ask neighbours {
 					if !myself.interviewing and self.want_to_be_interviewed and self.targetPoint = nil and !(self.hungry or self.thirsty) {
 						myself.random_point <- self.location + {rnd(0.4 * guest_interaction_distance), rnd(0.4 * guest_interaction_distance)};
 						if myself.random_point.x > worldDimension {
 							myself.random_point <- {worldDimension, myself.random_point.y};
 						}
+
 						if myself.random_point.y > worldDimension {
 							myself.random_point <- {myself.random_point.x, worldDimension};
 						}
+
 						if myself.random_point.x < 0.0 {
 							myself.random_point <- {0.0, myself.random_point.y};
 						}
+
 						if myself.random_point.y < 0.0 {
 							myself.random_point <- {myself.random_point.x, 0.0};
 						}
+
 						myself.targetPoint <- myself.random_point;
 						myself.random_point <- nil;
 						myself.at_store <- true;
@@ -1032,30 +1077,34 @@ species Journalist skills: [moving, fipa]
 						write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") interviewing (" + self.name + ")";
 						break;
 					}
-	    		}
-    		}
-    	}
-    }
 
-    reflex doneInterviewing when: interviewing and mod(cycle, 10000) = 0 {
-    	interviewed_count <- interviewed_count + 1;
-    	interviewing <- false;
-    	random_point <- {rnd(worldDimension), rnd(worldDimension)};
-    	targetPoint <- random_point;
-    }
+				}
 
-    reflex leaveWhenNotCurious when: !curious {
-    	leave <- true;
-    	targetPoint <- exitPoint;
-    }
+			}
 
-    // Leave the place when at exit.
-    reflex leaveFestival when: leave and location distance_to(exitPoint) < building_interaction_distance {
-    	write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((curious) ? " because he is not curious anymore." : ".");
-    	do die;
-    }
+		}
+
+	}
+
+	reflex doneInterviewing when: interviewing and mod(cycle, 10000) = 0 {
+		interviewed_count <- interviewed_count + 1;
+		interviewing <- false;
+		random_point <- {rnd(worldDimension), rnd(worldDimension)};
+		targetPoint <- random_point;
+	}
+
+	reflex leaveWhenNotCurious when: !curious {
+		leave <- true;
+		targetPoint <- exitPoint;
+	}
+
+	// Leave the place when at exit.
+	reflex leaveFestival when: leave and location distance_to (exitPoint) < building_interaction_distance {
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((curious) ? " because he is not curious anymore." : ".");
+		do die;
+	}
+
 }
-
 
 // Food Shop.
 species FoodShop schedules: [] frequency: 0 {
@@ -1105,11 +1154,13 @@ experiment festival type: gui {
 			species DrinksShop aspect: icon refresh: false;
 			species SecurityGuard aspect: icon;
 			species ExitGate aspect: icon refresh: false;
-	        species Journalist aspect: icon;
+			species Journalist aspect: icon;
 		}
-	    inspect "journalist inspector" value: Journalist attributes:["interviewed_count", "moving", "interviewing", "curious"];
+
+		inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
 		inspect "guest" value: FestivalGuest attributes: ["wallet"] type: table;
 		inspect "evil guest" value: EvilGuest attributes: ["wallet"] type: table;
 		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
 	}
+
 }
