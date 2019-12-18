@@ -1162,12 +1162,13 @@ species Stage skills: [fipa] {
 	string role <- nil;
 	list<float> act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
 
-	// Send invitation to all guests in the festival to join auction.
-	//	reflex informGuestsAboutActs when: mod(int(time), act_duration) = 0 {
-	//		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
-	//		role <- any(['band', 'singer', 'dancer']);
-	//		do start_conversation with: [to::[FestivalGuest, EvilGuest, Journalist], protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
-	//	}
+	//Send invitation to all guests in the festival to join auction.
+	reflex informGuestsAboutActs when: mod(int(time), act_duration) = 0 {
+		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
+		role <- any(['band', 'singer', 'dancer']);
+		do start_conversation with:
+		[to::list(FestivalGuest + EvilGuest + Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
+	}
 
 	// Change act attributes once it ends
 	reflex newActAttributes when: mod(int(time), act_duration) = 0 {
