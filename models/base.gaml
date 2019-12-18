@@ -51,7 +51,7 @@ global {
 			create Stage number: 1 with: (location: stages_locs[i], role: roles[i]);
 		} }
 
-	int max_cycles <- 300000;
+	int max_cycles <- 30005;
 
 	reflex stop when: cycle = max_cycles {
 		write "Paused.";
@@ -894,7 +894,7 @@ species Journalist skills: [moving, fipa] {
 	list<float> stage_utility <- nil;
 	list<string> stages <- nil;
 	point best_stage_loc <- nil;
-	string best_stage <- nil;
+	agent best_stage <- nil;
 	float best_utility <- 0.0;
 	list<string> acts <- nil;
 	string best_act <- nil;
@@ -1137,7 +1137,6 @@ species Journalist skills: [moving, fipa] {
 	// Read inform msgs from stages.
 	reflex receive_inform_messages when: !empty(informs) and !interviewing {
 		write '\n(Time ' + time + '): ' + name + ' receives inform messages.' + informs;
-		//write '\t(Time ' + time + '): ' + informs;
 		float max_utility <- 0.0;
 		stage_utility <- nil;
 		stage_locs <- nil;
@@ -1156,7 +1155,7 @@ species Journalist skills: [moving, fipa] {
 				if (current_utility > max_utility) {
 					max_utility <- current_utility;
 					best_stage_loc <- agent(information.sender).location;
-					best_stage <- agent(information.sender).name;
+					best_stage <- agent(information.sender);
 					best_act <- information.contents[2];
 				}
 
@@ -1171,12 +1170,14 @@ species Journalist skills: [moving, fipa] {
 		// when all stages invitations are considered, go to best one
 		if (stage_count = 3) {
 			choose_stage <- true;
+			stage_count <- 0;
 		}
 
 	}
 
 	// Go to best stage
 	reflex gotoBestStage when: choose_stage {
+		do start_conversation with: [to::list(best_stage), protocol::'fipa-contract-net', performative::'inform', contents::['I am coming']];
 		targetPoint <- best_stage_loc;
 		targetPoint <- {targetPoint.x + rnd(-10, 10), targetPoint.y + rnd(8, 10)};
 		best_utility <- stage_utility[stage_locs index_of (best_stage_loc)];
@@ -1231,6 +1232,7 @@ species Stage skills: [fipa] {
 	bool showing_act <- false;
 	string role <- nil;
 	list<float> act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
+	list<agent> audience <- nil;
 
 	//Send invitation to all guests in the festival to join stage shows.
 	reflex informGuestsAboutActs when: mod(int(time), (act_duration + rest_duration)) = 0 and int(time) > 0 {
@@ -1241,10 +1243,23 @@ species Stage skills: [fipa] {
 	}
 
 	//Send end information to all guests in the festival to leave stage shows.
-	reflex informGuestsActsEnding when: showing_act and mod(int(time), act_duration) = 0 and mod(int(time), (act_duration + rest_duration)) != 0 {
-		write '\n(Time ' + time + '): ' + name + ' sends a act closure to all the guests.';
-		do start_conversation with: [to::list(Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Act ends', act_attributes, role]];
+	reflex informGuestsActsEnding when: showing_act and mod(int(time), act_duration) = 0 and mod(int(time), (act_duration + rest_duration)) != 0 and length(audience) != 0 {
+		write '\n(Time ' + time + '): ' + name + ' sends a act closure to the audience.';
+		do start_conversation with: [to::audience, protocol::'fipa-contract-net', performative::'inform', contents::['Act ends', role]];
 		showing_act <- false;
+		audience <- nil;
+	}
+
+	// Make a record of guests
+	reflex getlistofinterestedguests when: !empty(informs) {
+		loop information over: informs {
+			if (string(information.contents[0]) = 'I am coming') {
+				audience <+ agent(information.sender);
+				write "audience: " + audience;
+			}
+
+		}
+
 	}
 
 	// Change act attributes once it ends
@@ -1261,15 +1276,10 @@ species Stage skills: [fipa] {
 
 	// Display character of the guest.
 	aspect range {
-		switch showing_act {
-			match true {
-				draw circle(8) color: any(mycolors) border: #black;
-			}
-
-			default {
-				draw circle(8) color: mycolors[1] border: #black;
-			}
-
+		if (showing_act and length(audience) != 0) {
+			draw circle(8) color: any(mycolors) border: #black;
+		} else {
+			draw circle(8) color: mycolors[1] border: #black;
 		}
 
 	}
