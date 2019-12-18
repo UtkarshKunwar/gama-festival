@@ -28,6 +28,12 @@ global {
 	point informationCentrePoint <- {worldDimension / 2.0, worldDimension / 2.0};
 	point exitPoint <- {worldDimension, worldDimension / 2.0};
 
+	//globals for Stage
+	int nb_stage <- 3;
+	list<point>
+	stages_locs <- [{worldDimension / 4, worldDimension / 4}, {worldDimension / 4, worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension / 4}];
+	list<string> roles <- ['band', 'singer', 'dancer'];
+
 	init {
 		seed <- #pi / 5; // Looked good.
 		create FestivalGuest number: number_of_guests;
@@ -35,18 +41,24 @@ global {
 		create Journalist number: number_of_journalists;
 		create EvilGuest number: number_of_evil_guys;
 		create ExitGate number: 1 with: (name: "ExitGate", location: exitPoint);
-	}
+
+		// Randomised locations for stages.
+		int i <- 0;
+		bool decent_loc <- false;
+		loop i from: 0 to: nb_stage - 1 {
+		//			point stage_point <- {rnd(worldDimension), rnd(worldDimension)};
+		//			stages_locs <+ stage_point;
+			create Stage number: 1 with: (location: stages_locs[i], role: roles[i]);
+		} }
 
 	int max_cycles <- 300000;
 
 	reflex stop when: cycle = max_cycles {
 		write "Paused.";
 		do pause;
-	}
+	} }
 
-}
-
-// General guest.
+	// General guest.
 species FestivalGuest skills: [moving, fipa] {
 // Display icon of the person.
 	image_file my_icon <- image_file("../includes/data/dance.png");
@@ -1142,6 +1154,40 @@ species ExitGate schedules: [] frequency: 0 {
 
 }
 
+// --------------------------------------------------Stage Begins---------------------------------------------------
+species Stage skills: [fipa] {
+
+// Stage variables
+	int act_duration <- 20000;
+	string role <- nil;
+	list<float> act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
+
+	// Send invitation to all guests in the festival to join auction.
+	//	reflex informGuestsAboutActs when: mod(int(time), act_duration) = 0 {
+	//		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
+	//		role <- any(['band', 'singer', 'dancer']);
+	//		do start_conversation with: [to::[FestivalGuest, EvilGuest, Journalist], protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
+	//	}
+
+	// Change act attributes once it ends
+	reflex newActAttributes when: mod(int(time), act_duration) = 0 {
+		act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
+	}
+
+	image_file my_icon <- image_file("../includes/data/stages/" + role + ".png");
+	list<rgb> mycolors <- [rgb(192, 252, 15, 100), rgb(15, 192, 252, 100), rgb(252, 15, 192, 100)];
+
+	aspect icon {
+		draw my_icon size: 7 * 2;
+	}
+
+	// Display character of the guest.
+	aspect range {
+		draw circle(12) color: mycolors[1] border: #black;
+	}
+
+}
+// --------------------------------------------------Stage Ends---------------------------------------------------
 // Experiment.
 experiment festival type: gui {
 	output {
@@ -1155,6 +1201,8 @@ experiment festival type: gui {
 			species SecurityGuard aspect: icon;
 			species ExitGate aspect: icon refresh: false;
 			species Journalist aspect: icon;
+			species Stage aspect: range;
+			species Stage aspect: icon;
 		}
 
 		inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
