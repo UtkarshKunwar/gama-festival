@@ -108,6 +108,8 @@ species FestivalGuest skills: [moving, fipa] {
 	bool has_drink <- false;
 	point drinkee_point <- nil;
 	FestivalGuest offerer <- nil;
+	EvilGuest offerer_e <- nil;
+	bool bad <- false;
 
 	// Caluclates the distance travelled by the person.
 	reflex calculateDistance when: moving {
@@ -141,7 +143,6 @@ species FestivalGuest skills: [moving, fipa] {
 		} else {
 			boredom <- boredom + boredom_consum;
 		}
-
 	}
 
     reflex isBeingInterviewed when: being_interviewed and mod(cycle, 10000) = 0 {
@@ -156,16 +157,13 @@ species FestivalGuest skills: [moving, fipa] {
 				my_icon <- image_file("../includes/data/bored.png");
 				icon_status <- 4;
 			}
-
 		} else {
 			bored <- false;
 			if icon_status != 0 {
 				my_icon <- image_file("../includes/data/dance.png");
 				icon_status <- 0;
 			}
-
 		}
-
 	}
 
 	// Check if generous or not. Don't change priority if already doing something.
@@ -274,13 +272,6 @@ species FestivalGuest skills: [moving, fipa] {
     	}
     }
 
-	// Check if at information centre.
-	reflex atInformationCentre when: (hungry or thirsty) and !at_info and location distance_to (informationCentrePoint) < building_interaction_distance and !at_store {
-		at_info <- true;
-		moving <- false;
-		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Information Centre";
-	}
-
     // Check if at random point.
     reflex atRandomPoint when: at_store and random_point != nil and location distance_to(random_point) < building_interaction_distance {
     	at_store <- false;
@@ -328,16 +319,6 @@ species FestivalGuest skills: [moving, fipa] {
 			targetPoint <- random_point;
 		}
 		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Drinks Point";
-	}
-
-	// Check if at random point.
-	reflex atRandomPoint when: at_store and random_point != nil and location distance_to (random_point) < building_interaction_distance {
-		at_store <- false;
-		at_info <- false;
-		moving <- false;
-		random_point <- nil;
-		targetPoint <- nil;
-		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Random Point";
 	}
 
 	// Go and complain to the information centre if you're near a bad person.
@@ -410,10 +391,13 @@ species FestivalGuest skills: [moving, fipa] {
 
 	// Look for drinking buddies when feeling generous.
 	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil {
-		list<FestivalGuest> neighbours <- FestivalGuest at_distance(5 * guest_interaction_distance);
+		list<EvilGuest> neighbours <- EvilGuest at_distance(2 * guest_interaction_distance);
+		if length(neighbours) = 0 {
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance(2 * guest_interaction_distance);
+		}
 		loop neighbour over: neighbours {
 			ask neighbour {
-				if !self.moving {
+				if !self.moving and !self.bad {
 					myself.at_store <- true;
 					myself.random_point <- {self.location.x + rnd(building_interaction_distance), self.location.y + rnd(building_interaction_distance)};
 					myself.targetPoint <- myself.random_point;
@@ -425,7 +409,10 @@ species FestivalGuest skills: [moving, fipa] {
 
     // Offer drink when feeling generous.
     reflex offerDrink when: !moving and generous and drinkee_point = nil {
-    	list<FestivalGuest> neighbours <- FestivalGuest at_distance(guest_interaction_distance);
+    	list<EvilGuest> neighbours <- EvilGuest at_distance(2 * guest_interaction_distance);
+		if length(neighbours) = 0 {
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance(2 * guest_interaction_distance);
+		}
     	loop neighbour over: neighbours {
     		ask neighbour {
     			if !(self.moving or self.offered_drink) and self.want_drink {
@@ -433,7 +420,7 @@ species FestivalGuest skills: [moving, fipa] {
     				self.generosity <- 0.2;
     				myself.thirst <- 1.0;
     				self.offered_drink <- true;
-    				self.offerer <- FestivalGuest(myself);
+    				self.offerer <- myself;
     				myself.generosity <- 0.25;
     				myself.drinkee_point <- {self.location.x + rnd(-building_interaction_distance, building_interaction_distance), self.location.y + rnd(-building_interaction_distance, building_interaction_distance)};
     				write "Cycle (" + string(cycle) + ")" + myself.name + " offered drink to " + self.name;
@@ -445,24 +432,45 @@ species FestivalGuest skills: [moving, fipa] {
 
     // Receive drink from the offerer.
     reflex receiveDrink when: offered_drink {
-    	ask offerer {
-    		if self.location distance_to(myself.location) < guest_interaction_distance and self.has_drink {
-    			myself.thirst <- 0.25;
-    			myself.offered_drink <- false;
-    			myself.want_drink <- flip(0.2);
-    			myself.moving <- false;
-    			self.thirst <- 0.25;
-    			self.drinkee_point <- nil;
-    			self.has_drink <- false;
-    			myself.offerer <- nil;
-    			myself.at_store <- true;
-    			self.at_store <- true;
-    			self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-    			self.targetPoint <- self.random_point;
-    			myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-    			myself.targetPoint <- myself.random_point;
-    			write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
-    		}
+    	if offerer != nil {
+	    	ask offerer {
+	    		if self.location distance_to(myself.location) < guest_interaction_distance and self.has_drink {
+	    			myself.thirst <- 0.25;
+	    			myself.offered_drink <- false;
+	    			myself.want_drink <- flip(0.2);
+	    			myself.moving <- false;
+	    			self.thirst <- 0.25;
+	    			self.drinkee_point <- nil;
+	    			self.has_drink <- false;
+	    			myself.offerer <- nil;
+	    			myself.at_store <- true;
+	    			self.at_store <- true;
+	    			self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+	    			self.targetPoint <- self.random_point;
+	    			myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+	    			myself.targetPoint <- myself.random_point;
+	    			write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
+	    		}
+	    	}
+    	} if offerer_e != nil {
+	    	ask offerer_e {
+	    		if !self.bad and self.location distance_to(myself.location) < guest_interaction_distance and self.has_drink {
+	    			myself.thirst <- 0.25;
+	    			myself.offered_drink <- false;
+	    			myself.want_drink <- flip(0.2);
+	    			myself.moving <- false;
+	    			self.thirst <- 0.25;
+	    			self.drinkee_point <- nil;
+	    			self.has_drink <- false;
+	    			myself.offerer_e <- nil;
+	    			myself.at_store <- true;
+	    			self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+	    			self.targetPoint <- self.random_point;
+	    			myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+	    			myself.targetPoint <- myself.random_point;
+	    			write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
+	    		}
+	    	}
     	}
     }
 }
@@ -477,6 +485,9 @@ species EvilGuest skills: [moving, fipa] {
 	aspect icon {
 		draw my_icon size: 7 * icon_size;
 	}
+
+	bool thirsty <- false;
+	float thirst <- rnd(max_thirst) update: thirst + thirst_consum max: max_thirst;
 
 	float max_boredom <- 1.0;
 	float boredom_consum <- 0.00001;
@@ -494,6 +505,16 @@ species EvilGuest skills: [moving, fipa] {
 	float wallet <- rnd(100.0, 500.0);
 	bool bad <- false;
 
+	float max_generosity <- 1.0;
+	float generosity_consum <- 0.00001;
+	float generosity <- rnd(max_generosity) update: generosity + generosity_consum max: max_generosity;
+	bool generous <- false;
+	bool want_drink <- flip(0.5);
+	bool offered_drink <- false;
+	bool has_drink <- false;
+	point drinkee_point <- nil;
+	FestivalGuest offerer <- nil;
+
 	// Caluclates the distance travelled by the person.
 	reflex calculateDistance when: moving {
 		distance_travelled <- distance_travelled + move_speed * step;
@@ -503,7 +524,7 @@ species EvilGuest skills: [moving, fipa] {
 	reflex comeToTheDarkSide when: !bad and mod(cycle, 1000) = 0 and length(FestivalGuest at_distance (guest_interaction_distance)) > 0 and !moving and targetPoint = nil {
 		bad <- flip(1.0 / number_of_guests);
 		if bad {
-			write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") has come to the dark side.";
+			write "Cycle (" + string(cycle) + ") Agent (" + name + ") has come to the dark side.";
 		}
 	}
 
@@ -517,6 +538,15 @@ species EvilGuest skills: [moving, fipa] {
 			boredom <- boredom + boredom_consum;
 		}
 	}
+
+	// Check if thirsty or not. Change icon accordingly. Don't change priority if already doing something.
+    reflex isThirsty when: !moving {
+    	if thirst = 1.0 {
+    		thirsty <- true;
+    	} else {
+    		thirsty <- false;
+    	}
+    }
 
 	// Check if bored or not. Change icon accordingly. Don't change priority if already doing something.
 	reflex isBored when: !moving {
@@ -532,6 +562,15 @@ species EvilGuest skills: [moving, fipa] {
 				my_icon <- image_file("../includes/data/bad.png");
 				icon_status <- 0;
 			}
+		}
+	}
+
+	// Check if generous or not. Don't change priority if already doing something.
+	reflex isGenerous when: !(thirsty or moving or bored) {
+		if generosity >= 1.0 {
+			generous <- true;
+		} else {
+			generous <- false;
 		}
 	}
 
@@ -585,19 +624,19 @@ species EvilGuest skills: [moving, fipa] {
 				ask neighbour {
 					if self.targetPoint = nil and !(self.hungry or self.thirsty) {
 						myself.random_point <- self.location + {rnd(guest_interaction_distance), rnd(guest_interaction_distance)};
-						if float(myself.random_point.x) > worldDimension {
+						if myself.random_point.x > worldDimension {
 							myself.random_point <- {worldDimension, myself.random_point.y};
 						}
 
-						if float(myself.random_point.y) > worldDimension {
+						if myself.random_point.y > worldDimension {
 							myself.random_point <- {myself.random_point.x, worldDimension};
 						}
 
-						if float(myself.random_point.x) < 0.0 {
+						if myself.random_point.x < 0.0 {
 							myself.random_point <- {0.0, myself.random_point.y};
 						}
 
-						if float(myself.random_point.y) < 0.0 {
+						if myself.random_point.y < 0.0 {
 							myself.random_point <- {myself.random_point.x, 0.0};
 						}
 
@@ -615,7 +654,7 @@ species EvilGuest skills: [moving, fipa] {
 
 	// Leave the place when at exit.
 	reflex leaveFestival when: leave and location distance_to (exitPoint) < building_interaction_distance {
-		write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") has left the event" + ((bored) ? " because he is bored." : ".");
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((bored) ? " because he is bored." : ".");
 		do die;
 	}
 
@@ -670,6 +709,66 @@ species EvilGuest skills: [moving, fipa] {
 		targetPoint <- exitPoint;
 	}
 
+	// You'll agree for free drinks when thristy.
+	reflex wantDrinkFromOthers when: thirst > 0.75 and !want_drink {
+		want_drink <- true;
+	}
+
+	// Look for drinking buddies when feeling generous.
+	reflex findDrinkingBuddies when: !bad and !moving and generous and drinkee_point = nil {
+		list<FestivalGuest> neighbours <- FestivalGuest at_distance(5 * guest_interaction_distance);
+		loop neighbour over: neighbours {
+			ask neighbour {
+				if !self.moving {
+					myself.random_point <- {self.location.x + rnd(building_interaction_distance), self.location.y + rnd(building_interaction_distance)};
+					myself.targetPoint <- myself.random_point;
+					break;
+				}
+			}
+		}
+	}
+
+    // Offer drink when feeling generous.
+    reflex offerDrink when: !bad and !moving and generous and drinkee_point = nil {
+    	list<FestivalGuest> neighbours <- FestivalGuest at_distance(guest_interaction_distance);
+    	loop neighbour over: neighbours {
+    		ask neighbour {
+    			if !(self.moving or self.offered_drink) and self.want_drink {
+    				self.thirst <- 0.75;
+    				self.generosity <- 0.2;
+    				myself.thirst <- 1.0;
+    				self.offered_drink <- true;
+    				self.offerer <- FestivalGuest(myself);
+    				myself.generosity <- 0.25;
+    				myself.drinkee_point <- {self.location.x + rnd(-building_interaction_distance, building_interaction_distance), self.location.y + rnd(-building_interaction_distance, building_interaction_distance)};
+    				write "Cycle (" + string(cycle) + ")" + myself.name + " offered drink to " + self.name;
+    				break;
+    			}
+    		}
+    	}
+    }
+
+    // Receive drink from the offerer.
+    reflex receiveDrink when: !bad and offered_drink {
+    	ask offerer {
+    		if self.location distance_to(myself.location) < guest_interaction_distance and self.has_drink {
+    			myself.thirst <- 0.25;
+    			myself.offered_drink <- false;
+    			myself.want_drink <- flip(0.2);
+    			myself.moving <- false;
+    			self.thirst <- 0.25;
+    			self.drinkee_point <- nil;
+    			self.has_drink <- false;
+    			myself.offerer <- nil;
+    			self.at_store <- true;
+    			self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+    			self.targetPoint <- self.random_point;
+    			myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+    			myself.targetPoint <- myself.random_point;
+    			write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
+    		}
+    	}
+    }
 }
 
 //----------------------------------------------------Evil Guest ends---------------------------------------------------------
@@ -797,7 +896,8 @@ species SecurityGuard skills: [moving, fipa] {
 		targetPoint <- securityGuardPoint;
 		hunting <- false;
 		reached_bad_agent <- false;
-	} }
+	}
+}
 
 	//------------------------------------------------------Security Guard Ends------------------------------------------------------
 
@@ -873,7 +973,8 @@ species InformationCentre skills: [fipa] {
 			write "Cycle (" + string(cycle) + ") Agent (" + name + ") " + string(length(badPeoples)) + " complaint(s)." + badPeoples;
 		}
 
-	} }
+	}
+}
 
 	//------------------------------------------------------Information Centre Ends------------------------------------------------------
 
@@ -1178,6 +1279,6 @@ experiment festival type: gui {
 	        species Journalist aspect: icon;
 		}
 
-		inspect "guest" value: FestivalGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
+		inspect "guest" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
 	}
 }
