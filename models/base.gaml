@@ -1633,8 +1633,13 @@ species Stage skills: [fipa] {
 	reflex informGuestsAboutActs when: mod(int(time), (act_duration + rest_duration)) = 0 and int(time) > 0 {
 		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
 		role <- any(['band', 'singer', 'dancer']);
-		do start_conversation with:
-		[to::list(FestivalGuest + EvilGuest + Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
+		if list(FestivalGuest + EvilGuest + Journalist) != nil {
+			do start_conversation with:
+			[to::list(FestivalGuest + EvilGuest + Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
+		} else {
+			write '\t(Time ' + time + '): ' + name + ' says there is no one to receive messages.';
+		}
+
 	}
 
 	//Send end information to all guests in the festival to leave stage shows.
