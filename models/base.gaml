@@ -79,8 +79,11 @@ species FestivalGuest skills: [moving, fipa] {
 		draw my_icon size: 7 * icon_size;
 	}
 
+	// Personality
+	bool shy <- flip (0.3);
+
 	float max_boredom <- 1.0;
-	float boredom_consum <- 0.00001;
+	float boredom_consum <- shy ? 0.00002 : 0.00001;
 
 	// Hunger and thirst updates.
 	float hunger <- rnd(max_hunger) update: hunger + hunger_consum max: max_hunger;
@@ -109,14 +112,14 @@ species FestivalGuest skills: [moving, fipa] {
 	float distance_travelled <- 0.0;
 	float wallet <- rnd(0.0, 500.0);
 	bool being_interviewed <- false;
-	bool want_to_be_interviewed <- flip(0.5);
+	bool want_to_be_interviewed <- shy ? flip(0.3) : flip(0.7);
 
 	// Generosity
 	float max_generosity <- 1.0;
 	float generosity_consum <- 0.00005;
 	float generosity <- rnd(max_generosity) update: generosity + generosity_consum max: max_generosity;
 	bool generous <- false;
-	bool want_drink <- flip(0.5);
+	bool want_drink <- shy? flip(0.3) : flip (0.7);
 	bool offered_drink <- false;
 	bool has_drink <- false;
 	point drinkee_point <- nil;
@@ -399,7 +402,7 @@ species FestivalGuest skills: [moving, fipa] {
 
 			loop neighbour over: neighbours {
 				ask neighbour {
-					if self.targetPoint = nil and !(self.hungry or self.thirsty) {
+					if self.targetPoint = nil and !(self.hungry or self.thirsty) and (!myself.shy or flip(0.5)) {
 						myself.random_point <- self.location + {rnd(guest_interaction_distance), rnd(guest_interaction_distance)};
 						if myself.random_point.x > worldDimension {
 							myself.random_point <- {worldDimension, myself.random_point.y};
@@ -441,12 +444,12 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// You'll agree for free drinks when thristy.
-	reflex wantDrinkFromOthers when: thirst > 0.75 and !want_drink {
+	reflex wantDrinkFromOthers when: thirst > 0.75 and !want_drink and (!shy or flip(0.5)) {
 		want_drink <- true;
 	}
 
 	// Look for drinking buddies when feeling generous.
-	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil {
+	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil and (!shy or flip(0.5)) {
 		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
 			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
@@ -468,7 +471,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Offer drink when feeling generous.
-	reflex offerDrink when: !moving and generous and drinkee_point = nil {
+	reflex offerDrink when: !moving and generous and drinkee_point = nil and !shy {
 		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
 			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
@@ -607,6 +610,22 @@ species FestivalGuest skills: [moving, fipa] {
 		all_stage_evaluated <- false;
 	}
 
+	// Shy away when near a lot of people.
+	reflex shyAway when: !moving and shy and flip(0.5) and mod(cycle, 10000) = 0 {
+		list<EvilGuest> evil_neighbours <- EvilGuest at_distance(3 * guest_interaction_distance);
+		list<FestivalGuest> neighbours <- FestivalGuest at_distance(2 * guest_interaction_distance);
+		list<Journalist> journalist_neighbours <- Journalist at_distance(5 * guest_interaction_distance);
+
+		int count <- length(neighbours) + length(evil_neighbours) + length(journalist_neighbours);
+		int max_count <- int((number_of_evil_guys + number_of_guests + number_of_journalists) / 4);
+
+		if count >= max_count {
+			random_point <- {rnd(worldDimension), rnd(worldDimension)};
+			targetPoint <- random_point;
+			at_store <- true;
+			write "Cycle (" + cycle + ") (" + name + ") feeling shy. Moving to new location.";
+		}
+	}
 }
 
 //----------------------------------------------------Evil Guest begins---------------------------------------------------------
@@ -867,7 +886,7 @@ species EvilGuest skills: [moving, fipa] {
 
 				}
 
-			} // deal with stages invitation and closure 
+			} // deal with stages invitation and closure
 else if (species(information.sender) = Stage) {
 				if (information.contents[0] = 'Invitation') {
 					stage_count <- stage_count + 1;
@@ -1048,7 +1067,7 @@ species SecurityGuard skills: [moving, fipa] {
 		do goto target: targetPoint speed: move_speed * 2;
 	}
 
-	// Reflex change corruptness and strictness behaviors 
+	// Reflex change corruptness and strictness behaviors
 	reflex courrupt_strict_modify when: (mod(int(time), 10000) = 0) {
 		corruptness <- rnd(0.0, 1.0);
 		strictness <- rnd(0.0, 1.0);
@@ -1709,9 +1728,10 @@ experiment festival type: gui {
 		//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
 		//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
 		//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
-		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
+		//inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
 		//      inspect "stage" value: Stage attributes: ["showing_act"] type: table;
 		//inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
+		inspect "shyness" value: FestivalGuest attributes: ["shy"];
 	}
 
 }
