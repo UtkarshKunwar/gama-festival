@@ -443,6 +443,18 @@ species EvilGuest skills: [moving, fipa] {
 	float wallet <- rnd(100.0, 500.0);
 	bool bad <- false;
 
+	// Stage variables
+	list<float> my_preferences <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
+	list<point> stage_locs <- nil;
+	list<float> stage_utility <- nil;
+	list<string> stages <- nil;
+	point best_stage_loc <- nil;
+	agent best_stage <- nil;
+	float best_utility <- 0.0;
+	list<string> acts <- nil;
+	string best_act <- nil;
+	bool all_stage_evaluated <- false;
+
 	// Caluclates the distance travelled by the person.
 	reflex calculateDistance when: moving {
 		distance_travelled <- distance_travelled + move_speed * step;
@@ -584,39 +596,82 @@ species EvilGuest skills: [moving, fipa] {
 	list<string> leave_msgs <- ['Get out', 'GET OUT YOU F***R'];
 	// read inform msgs from security guard
 	reflex receive_inform_msgs when: !empty(informs) {
-		message inf <- informs[0];
-		write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform message from ' + agent(inf.sender).name + inf.contents;
-		if (!bad) {
-			do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['I am Good']];
-		} else {
-			switch inf.contents[0] {
-				match leave_msgs[0] {
-				// Not strict guard
-				// fool guard and change location
-					write "Cycle (" + string(cycle) + ") Agent (" + name + ' fooled ' + agent(inf.sender).name;
-					do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
-					bad <- false; // turned into good guy
-					random_point <- {rnd(worldDimension), rnd(worldDimension)};
-					targetPoint <- random_point;
-				}
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform messages';
+		//stage variables
+		float max_utility <- 0.0;
+		stage_utility <- nil;
+		stage_locs <- nil;
+		int stage_count <- 0;
+		loop information over: informs {
 
-				match leave_msgs[1] {
-				// Strict guard
-				// bribe if you have some money
-					if (wallet > 100) {
-						write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to (" + agent(inf.sender).name + ")";
-						do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
-					} else {
-					// sincerely go out
-						do start_conversation with: [to::list(inf.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
-						leave <- true;
-						targetPoint <- exitPoint;
+		// deal with security guard
+			if (species(information.sender) = SecurityGuard) {
+				if (!bad) {
+					do start_conversation with: [to::list(information.sender), protocol::'fipa-contract-net', performative::'request', contents::['I am Good']];
+				} else {
+					switch information.contents[0] {
+						match leave_msgs[0] {
+						// Not strict guard
+						// fool guard and change location
+							write "Cycle (" + string(cycle) + ") Agent (" + name + ' fooled ' + agent(information.sender).name;
+							do start_conversation with: [to::list(information.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
+							bad <- false; // turned into good guy
+							random_point <- {rnd(worldDimension), rnd(worldDimension)};
+							targetPoint <- random_point;
+						}
+
+						match leave_msgs[1] {
+						// Strict guard
+						// bribe if you have some money
+							if (wallet > 100) {
+								write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") try to bribe " + wallet + " to (" + agent(information.sender).name + ")";
+								do start_conversation with: [to::list(information.sender), protocol::'fipa-contract-net', performative::'request', contents::['BRIBE', wallet]];
+							} else {
+							// sincerely go out
+								do start_conversation with: [to::list(information.sender), protocol::'fipa-contract-net', performative::'request', contents::['OK']];
+								leave <- true;
+								targetPoint <- exitPoint;
+							}
+
+						}
+
 					}
 
 				}
 
+			} // deal with stages invitation and closure 
+else if (species(information.sender) = Stage) {
+				if (information.contents[0] = 'Invitation') {
+					stage_count <- stage_count + 1;
+					// Evaluate utility of the act
+					float current_utility <- get_utility(information.contents[1]);
+					stage_utility <+ current_utility;
+					stage_locs <+ agent(information.sender).location;
+					stages <+ agent(information.sender).name;
+					acts <+ information.contents[2];
+					write '\t(Time ' + time + '): ' + agent(information.sender).name + ' utility: ' + current_utility;
+					// keep track of best stages
+					if (current_utility > max_utility) {
+						max_utility <- current_utility;
+						best_stage_loc <- agent(information.sender).location;
+						best_stage <- agent(information.sender);
+						best_act <- information.contents[2];
+					}
+
+				} else if (information.contents[0] = 'Act ends') {
+					all_stage_evaluated <- false;
+					random_point <- {rnd(worldDimension), rnd(worldDimension)};
+					targetPoint <- random_point;
+				}
+
 			}
 
+		}
+
+		// when all stages invitations are considered, go to best one
+		if (stage_count = 3) {
+			all_stage_evaluated <- true;
+			stage_count <- 0;
 		}
 
 	}
@@ -635,6 +690,25 @@ species EvilGuest skills: [moving, fipa] {
 	reflex receive_refuse_msgs when: !empty(refuses) {
 		leave <- true;
 		targetPoint <- exitPoint;
+	}
+
+	// Reacting to Stages Invite------------------------
+	// Utility function
+	float get_utility (list<float> act_attributes) {
+	// Add a more complex function for utility with atleast 6 variables
+		float
+		utility <- act_attributes[0] * my_preferences[0] + act_attributes[1] * my_preferences[1] + act_attributes[2] * my_preferences[2] + act_attributes[3] * my_preferences[3] + act_attributes[4] * my_preferences[4] + act_attributes[5] * my_preferences[5];
+		return utility;
+	}
+
+	// Go to best stage
+	reflex gotoBestStage when: all_stage_evaluated and !bad {
+		do start_conversation with: [to::list(best_stage), protocol::'fipa-contract-net', performative::'inform', contents::['I am coming']];
+		targetPoint <- best_stage_loc;
+		targetPoint <- {targetPoint.x + rnd(-10, 10), targetPoint.y + rnd(8, 10)};
+		best_utility <- stage_utility[stage_locs index_of (best_stage_loc)];
+		write '\t(Time ' + time + '): ' + 'My choice: ' + best_stage + " with utility " + best_utility;
+		all_stage_evaluated <- false;
 	}
 
 }
@@ -898,7 +972,7 @@ species Journalist skills: [moving, fipa] {
 	float best_utility <- 0.0;
 	list<string> acts <- nil;
 	string best_act <- nil;
-
+	bool all_stage_evaluated <- false;
 	// Check if hungry or not. Don't change priority if already doing something.
 	reflex isHungry when: !(thirsty or moving) {
 		if hunger = 1.0 {
@@ -1133,10 +1207,9 @@ species Journalist skills: [moving, fipa] {
 		return utility;
 	}
 
-	bool choose_stage <- false;
 	// Read inform msgs from stages.
 	reflex receive_inform_messages when: !empty(informs) and !interviewing {
-		write '\n(Time ' + time + '): ' + name + ' receives inform messages.' + informs;
+	//write '\n(Time ' + time + '): ' + name + ' receives inform messages.' + informs;
 		float max_utility <- 0.0;
 		stage_utility <- nil;
 		stage_locs <- nil;
@@ -1160,7 +1233,7 @@ species Journalist skills: [moving, fipa] {
 				}
 
 			} else if (string(information.contents[0]) = 'Act ends') {
-				choose_stage <- false;
+				all_stage_evaluated <- false;
 				random_point <- {rnd(worldDimension), rnd(worldDimension)};
 				targetPoint <- random_point;
 			}
@@ -1169,20 +1242,20 @@ species Journalist skills: [moving, fipa] {
 
 		// when all stages invitations are considered, go to best one
 		if (stage_count = 3) {
-			choose_stage <- true;
+			all_stage_evaluated <- true;
 			stage_count <- 0;
 		}
 
 	}
 
 	// Go to best stage
-	reflex gotoBestStage when: choose_stage {
+	reflex gotoBestStage when: all_stage_evaluated {
 		do start_conversation with: [to::list(best_stage), protocol::'fipa-contract-net', performative::'inform', contents::['I am coming']];
 		targetPoint <- best_stage_loc;
 		targetPoint <- {targetPoint.x + rnd(-10, 10), targetPoint.y + rnd(8, 10)};
 		best_utility <- stage_utility[stage_locs index_of (best_stage_loc)];
 		write '\t(Time ' + time + '): ' + 'My choice: ' + best_stage + " with utility " + best_utility;
-		choose_stage <- false;
+		all_stage_evaluated <- false;
 	}
 
 }
@@ -1239,7 +1312,7 @@ species Stage skills: [fipa] {
 		showing_act <- true;
 		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
 		role <- any(['band', 'singer', 'dancer']);
-		do start_conversation with: [to::list(Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
+		do start_conversation with: [to::list(EvilGuest + Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
 	}
 
 	//Send end information to all guests in the festival to leave stage shows.
