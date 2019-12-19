@@ -49,16 +49,14 @@ global {
 		//			point stage_point <- {rnd(worldDimension), rnd(worldDimension)};
 		//			stages_locs <+ stage_point;
 			create Stage number: 1 with: (location: stages_locs[i], role: roles[i]);
-		}
-	}
+		} }
 
 	int max_cycles <- 300000;
 
 	reflex stop when: cycle = max_cycles {
 		write "Paused.";
 		do pause;
-	}
-}
+	} }
 
 	// General guest.
 species FestivalGuest skills: [moving, fipa] {
@@ -152,6 +150,7 @@ species FestivalGuest skills: [moving, fipa] {
 		} else {
 			hungry <- false;
 		}
+
 	}
 
 	// Check if thirsty or not. Change icon accordingly. Don't change priority if already doing something.
@@ -161,6 +160,7 @@ species FestivalGuest skills: [moving, fipa] {
 		} else {
 			thirsty <- false;
 		}
+
 	}
 
 	// Updates boredom values.
@@ -172,6 +172,7 @@ species FestivalGuest skills: [moving, fipa] {
 		} else {
 			boredom <- boredom + boredom_consum;
 		}
+
 	}
 
 	reflex isBeingInterviewed when: being_interviewed and mod(cycle, 10000) = 0 {
@@ -186,13 +187,16 @@ species FestivalGuest skills: [moving, fipa] {
 				my_icon <- image_file("../includes/data/bored.png");
 				icon_status <- 4;
 			}
+
 		} else {
 			bored <- false;
 			if icon_status != 0 {
 				my_icon <- image_file("../includes/data/dance.png");
 				icon_status <- 0;
 			}
+
 		}
+
 	}
 
 	// Check if generous or not. Don't change priority if already doing something.
@@ -202,6 +206,7 @@ species FestivalGuest skills: [moving, fipa] {
 		} else {
 			generous <- false;
 		}
+
 	}
 
 	// Dance.
@@ -220,9 +225,13 @@ species FestivalGuest skills: [moving, fipa] {
 						myself.boredom_consum <- -0.000008;
 						break;
 					}
+
 				}
+
 			}
+
 		}
+
 	}
 
 	// Move to a given point.
@@ -271,12 +280,17 @@ species FestivalGuest skills: [moving, fipa] {
 						asked <- true;
 						break;
 					}
+
 				}
+
 			}
+
 			if !asked {
 				targetPoint <- informationCentrePoint;
 			}
+
 		}
+
 	}
 
 	// Check if at information centre.
@@ -300,7 +314,9 @@ species FestivalGuest skills: [moving, fipa] {
 				myself.drinksPoint <- any(myself.drinksPoints);
 				myself.targetPoint <- myself.drinksPoint;
 			}
+
 		}
+
 	}
 
 	// Check if at random point.
@@ -339,8 +355,7 @@ species FestivalGuest skills: [moving, fipa] {
 		hungry <- false;
 		boredom <- boredom / 1.2;
 		bored <- false;
-    	want_to_be_interviewed <- flip(0.5);
-
+		want_to_be_interviewed <- flip(0.5);
 		if drinkee_point != nil {
 			has_drink <- true;
 			random_point <- drinkee_point;
@@ -364,8 +379,11 @@ species FestivalGuest skills: [moving, fipa] {
 					myself.bad_agent <- self;
 					break;
 				}
+
 			}
+
 		}
+
 	}
 
 	// Dance with the closest non-bad person when bored. If bored for too long then leave.
@@ -407,28 +425,33 @@ species FestivalGuest skills: [moving, fipa] {
 						write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") going to dance with (" + self.name + ")";
 						break;
 					}
+
 				}
+
 			}
+
 		}
+
 	}
 
-    // Leave the place when at exit.
-    reflex leaveFestival when: leave and location distance_to(exitPoint) < building_interaction_distance {
-    	write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((bored) ? " because he is bored." : ".");
-    	do die;
-    }
+	// Leave the place when at exit.
+	reflex leaveFestival when: leave and location distance_to (exitPoint) < building_interaction_distance {
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ") has left the event" + ((bored) ? " because he is bored." : ".");
+		do die;
+	}
 
-    // You'll agree for free drinks when thristy.
+	// You'll agree for free drinks when thristy.
 	reflex wantDrinkFromOthers when: thirst > 0.75 and !want_drink {
 		want_drink <- true;
 	}
 
 	// Look for drinking buddies when feeling generous.
 	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil {
-		list<EvilGuest> neighbours <- EvilGuest at_distance(2 * guest_interaction_distance);
+		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
-			list<FestivalGuest> neighbours <- FestivalGuest at_distance(2 * guest_interaction_distance);
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
 		}
+
 		loop neighbour over: neighbours {
 			ask neighbour {
 				if !self.moving and !self.bad {
@@ -437,76 +460,91 @@ species FestivalGuest skills: [moving, fipa] {
 					myself.targetPoint <- myself.random_point;
 					break;
 				}
+
 			}
+
 		}
+
 	}
 
-    // Offer drink when feeling generous.
-    reflex offerDrink when: !moving and generous and drinkee_point = nil {
-    	list<EvilGuest> neighbours <- EvilGuest at_distance(2 * guest_interaction_distance);
+	// Offer drink when feeling generous.
+	reflex offerDrink when: !moving and generous and drinkee_point = nil {
+		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
-			list<FestivalGuest> neighbours <- FestivalGuest at_distance(2 * guest_interaction_distance);
+			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
 		}
-    	loop neighbour over: neighbours {
-    		ask neighbour {
-    			if !(self.moving or self.offered_drink) and self.want_drink {
-    				self.thirst <- 0.75;
-    				self.generosity <- 0.2;
-    				myself.thirst <- 1.0;
-    				self.offered_drink <- true;
-    				self.offerer <- myself;
-    				myself.generosity <- 0.25;
-    				myself.drinkee_point <- {self.location.x + rnd(-building_interaction_distance, building_interaction_distance), self.location.y + rnd(-building_interaction_distance, building_interaction_distance)};
-    				write "Cycle (" + string(cycle) + ")" + myself.name + " offered drink to " + self.name;
-    				break;
-    			}
-    		}
-    	}
-    }
 
-    // Receive drink from the offerer.
-    reflex receiveDrink when: offered_drink {
-    	if offerer != nil {
-	    	ask offerer {
-	    		if self.location distance_to(myself.location) < guest_interaction_distance and self.has_drink {
-	    			myself.thirst <- 0.25;
-	    			myself.offered_drink <- false;
-	    			myself.want_drink <- flip(0.2);
-	    			myself.moving <- false;
-	    			self.thirst <- 0.25;
-	    			self.drinkee_point <- nil;
-	    			self.has_drink <- false;
-	    			myself.offerer <- nil;
-	    			myself.at_store <- true;
-	    			self.at_store <- true;
-	    			self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-	    			self.targetPoint <- self.random_point;
-	    			myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-	    			myself.targetPoint <- myself.random_point;
-	    			write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
-	    		}
-	    	}
-    	} if offerer_e != nil {
-	    	ask offerer_e {
-	    		if !self.bad and self.location distance_to(myself.location) < guest_interaction_distance and self.has_drink {
-	    			myself.thirst <- 0.25;
-	    			myself.offered_drink <- false;
-	    			myself.want_drink <- flip(0.2);
-	    			myself.moving <- false;
-	    			self.thirst <- 0.25;
-	    			self.drinkee_point <- nil;
-	    			self.has_drink <- false;
-	    			myself.offerer_e <- nil;
-	    			myself.at_store <- true;
-	    			self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-	    			self.targetPoint <- self.random_point;
-	    			myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-	    			myself.targetPoint <- myself.random_point;
-	    			write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
-	    		}
-	    	}
-    	}
-    }
+		loop neighbour over: neighbours {
+			ask neighbour {
+				if !(self.moving or self.offered_drink) and self.want_drink {
+					self.thirst <- 0.75;
+					self.generosity <- 0.2;
+					myself.thirst <- 1.0;
+					self.offered_drink <- true;
+					self.offerer <- myself;
+					myself.generosity <- 0.25;
+					myself.drinkee_point <-
+					{self.location.x + rnd(-building_interaction_distance, building_interaction_distance), self.location.y + rnd(-building_interaction_distance, building_interaction_distance)};
+					write "Cycle (" + string(cycle) + ")" + myself.name + " offered drink to " + self.name;
+					break;
+				}
+
+			}
+
+		}
+
+	}
+
+	// Receive drink from the offerer.
+	reflex receiveDrink when: offered_drink {
+		if offerer != nil {
+			ask offerer {
+				if self.location distance_to (myself.location) < guest_interaction_distance and self.has_drink {
+					myself.thirst <- 0.25;
+					myself.offered_drink <- false;
+					myself.want_drink <- flip(0.2);
+					myself.moving <- false;
+					self.thirst <- 0.25;
+					self.drinkee_point <- nil;
+					self.has_drink <- false;
+					myself.offerer <- nil;
+					myself.at_store <- true;
+					self.at_store <- true;
+					self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+					self.targetPoint <- self.random_point;
+					myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+					myself.targetPoint <- myself.random_point;
+					write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
+				}
+
+			}
+
+		}
+
+		if offerer_e != nil {
+			ask offerer_e {
+				if !self.bad and self.location distance_to (myself.location) < guest_interaction_distance and self.has_drink {
+					myself.thirst <- 0.25;
+					myself.offered_drink <- false;
+					myself.want_drink <- flip(0.2);
+					myself.moving <- false;
+					self.thirst <- 0.25;
+					self.drinkee_point <- nil;
+					self.has_drink <- false;
+					myself.offerer_e <- nil;
+					myself.at_store <- true;
+					self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+					self.targetPoint <- self.random_point;
+					myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+					myself.targetPoint <- myself.random_point;
+					write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
+				}
+
+			}
+
+		}
+
+	}
 
 	// Reacting to Stages Invite------------------------
 	// Utility function
@@ -537,6 +575,7 @@ species FestivalGuest skills: [moving, fipa] {
 					best_stage <- agent(information.sender);
 					best_act <- information.contents[2];
 				}
+
 			} else if (string(information.contents[0]) = 'Act ends') {
 				stage_utility <- nil;
 				stage_locs <- nil;
@@ -547,6 +586,7 @@ species FestivalGuest skills: [moving, fipa] {
 				random_point <- {rnd(worldDimension), rnd(worldDimension)};
 				targetPoint <- random_point;
 			}
+
 		}
 
 		// when all stages invitations are considered, go to best one
@@ -554,6 +594,7 @@ species FestivalGuest skills: [moving, fipa] {
 			all_stage_evaluated <- true;
 			stage_count <- 0;
 		}
+
 	}
 
 	// Go to best stage
@@ -565,6 +606,7 @@ species FestivalGuest skills: [moving, fipa] {
 		write '\t(Time ' + time + '): ' + name + ' choice: ' + best_stage + " with utility " + best_utility;
 		all_stage_evaluated <- false;
 	}
+
 }
 
 //----------------------------------------------------Evil Guest begins---------------------------------------------------------
@@ -580,7 +622,6 @@ species EvilGuest skills: [moving, fipa] {
 
 	bool thirsty <- false;
 	float thirst <- rnd(max_thirst) update: thirst + thirst_consum max: max_thirst;
-
 	float max_boredom <- 1.0;
 	float boredom_consum <- 0.00001;
 	float boredom <- 0.5;
@@ -596,7 +637,6 @@ species EvilGuest skills: [moving, fipa] {
 	float distance_travelled <- 0.0;
 	float wallet <- rnd(100.0, 500.0);
 	bool bad <- false;
-
 	float max_generosity <- 1.0;
 	float generosity_consum <- 0.00005;
 	float generosity <- rnd(max_generosity) update: generosity + generosity_consum max: max_generosity;
@@ -632,6 +672,7 @@ species EvilGuest skills: [moving, fipa] {
 		if bad {
 			write "Cycle (" + string(cycle) + ") Agent (" + name + ") has come to the dark side.";
 		}
+
 	}
 
 	// Updates boredom values.
@@ -643,16 +684,18 @@ species EvilGuest skills: [moving, fipa] {
 		} else {
 			boredom <- boredom + boredom_consum;
 		}
+
 	}
 
 	// Check if thirsty or not. Change icon accordingly. Don't change priority if already doing something.
-    reflex isThirsty when: !moving {
-    	if thirst = 1.0 {
-    		thirsty <- true;
-    	} else {
-    		thirsty <- false;
-    	}
-    }
+	reflex isThirsty when: !moving {
+		if thirst = 1.0 {
+			thirsty <- true;
+		} else {
+			thirsty <- false;
+		}
+
+	}
 
 	// Check if bored or not. Change icon accordingly. Don't change priority if already doing something.
 	reflex isBored when: !moving {
@@ -662,13 +705,16 @@ species EvilGuest skills: [moving, fipa] {
 				my_icon <- image_file("../includes/data/bored.png");
 				icon_status <- 4;
 			}
+
 		} else {
 			bored <- false;
 			if icon_status != 0 {
 				my_icon <- image_file("../includes/data/bad.png");
 				icon_status <- 0;
 			}
+
 		}
+
 	}
 
 	// Check if generous or not. Don't change priority if already doing something.
@@ -678,6 +724,7 @@ species EvilGuest skills: [moving, fipa] {
 		} else {
 			generous <- false;
 		}
+
 	}
 
 	// Dance.
@@ -696,9 +743,13 @@ species EvilGuest skills: [moving, fipa] {
 						myself.boredom_consum <- -0.000008;
 						break;
 					}
+
 				}
+
 			}
+
 		}
+
 	}
 
 	// Move to a given point.
@@ -753,9 +804,13 @@ species EvilGuest skills: [moving, fipa] {
 						//write "Cycle (" + string(cycle) + ") Agent (" + string(myself.name) + ") going to dance with (" + string(self.name) + ")";
 						break;
 					}
+
 				}
+
 			}
+
 		}
+
 	}
 
 	// Leave the place when at exit.
@@ -767,16 +822,17 @@ species EvilGuest skills: [moving, fipa] {
 	list<string> leave_msgs <- ['Get out', 'GET OUT YOU F***R'];
 	// read inform msgs from security guard
 	reflex receive_inform_msgs when: !empty(informs) {
-	//write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform messages';
+	//write "Cycle (" + string(cycle) + ") Agent (" + name + ' receives a inform messages' + informs;
 		loop information over: informs {
 
 		// deal with security guard
 			if (species(information.sender) = SecurityGuard) {
-				if (!bad) {
-					do start_conversation with: [to::list(information.sender), protocol::'fipa-contract-net', performative::'request', contents::['I am Good']];
-				} else {
-					switch information.contents[0] {
-						match leave_msgs[0] {
+				switch information.contents[0] {
+					match leave_msgs[0] {
+						if (!bad) {
+							write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") says I am good";
+							do start_conversation with: [to::list(information.sender), protocol::'fipa-contract-net', performative::'request', contents::['I am Good']];
+						} else {
 						// Not strict guard
 						// fool guard and change location
 							write "Cycle (" + string(cycle) + ") Agent (" + name + ' fooled ' + agent(information.sender).name;
@@ -786,7 +842,13 @@ species EvilGuest skills: [moving, fipa] {
 							targetPoint <- random_point;
 						}
 
-						match leave_msgs[1] {
+					}
+
+					match leave_msgs[1] {
+						if (!bad) {
+							write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") says I am good";
+							do start_conversation with: [to::list(information.sender), protocol::'fipa-contract-net', performative::'request', contents::['I am Good']];
+						} else {
 						// Strict guard
 						// bribe if you have some money
 							if (wallet > 100) {
@@ -798,11 +860,15 @@ species EvilGuest skills: [moving, fipa] {
 								leave <- true;
 								targetPoint <- exitPoint;
 							}
+
 						}
+
 					}
+
 				}
-			}  // deal with stages invitation and closure 
-            else if (species(information.sender) = Stage) {
+
+			} // deal with stages invitation and closure 
+else if (species(information.sender) = Stage) {
 				if (information.contents[0] = 'Invitation') {
 					stage_count <- stage_count + 1;
 					// Evaluate utility of the act
@@ -819,6 +885,7 @@ species EvilGuest skills: [moving, fipa] {
 						best_stage <- agent(information.sender);
 						best_act <- information.contents[2];
 					}
+
 				} else if (information.contents[0] = 'Act ends') {
 					stage_utility <- nil;
 					stage_locs <- nil;
@@ -828,13 +895,16 @@ species EvilGuest skills: [moving, fipa] {
 					random_point <- {rnd(worldDimension), rnd(worldDimension)};
 					targetPoint <- random_point;
 				}
+
 			}
+
 		}
 		// when all stages invitations are considered, go to best one
 		if (stage_count = 3) {
 			all_stage_evaluated <- true;
 			stage_count <- 0;
 		}
+
 	}
 
 	// read agree msg from security guard
@@ -860,7 +930,7 @@ species EvilGuest skills: [moving, fipa] {
 
 	// Look for drinking buddies when feeling generous.
 	reflex findDrinkingBuddies when: !bad and !moving and generous and drinkee_point = nil {
-		list<FestivalGuest> neighbours <- FestivalGuest at_distance(5 * guest_interaction_distance);
+		list<FestivalGuest> neighbours <- FestivalGuest at_distance (5 * guest_interaction_distance);
 		loop neighbour over: neighbours {
 			ask neighbour {
 				if !self.moving {
@@ -868,52 +938,61 @@ species EvilGuest skills: [moving, fipa] {
 					myself.targetPoint <- myself.random_point;
 					break;
 				}
+
 			}
+
 		}
+
 	}
 
-    // Offer drink when feeling generous.
-    reflex offerDrink when: !bad and !moving and generous and drinkee_point = nil {
-    	list<FestivalGuest> neighbours <- FestivalGuest at_distance(guest_interaction_distance);
-    	loop neighbour over: neighbours {
-    		ask neighbour {
-    			if !(self.moving or self.offered_drink) and self.want_drink {
-    				self.thirst <- 0.75;
-    				self.generosity <- 0.2;
-    				myself.thirst <- 1.0;
-    				self.offered_drink <- true;
-    				self.offerer <- FestivalGuest(myself);
-    				myself.generosity <- 0.25;
-    				myself.drinkee_point <- {self.location.x + rnd(-building_interaction_distance, building_interaction_distance), self.location.y + rnd(-building_interaction_distance, building_interaction_distance)};
-    				write "Cycle (" + string(cycle) + ")" + myself.name + " offered drink to " + self.name;
-    				break;
-    			}
-    		}
-    	}
-    }
+	// Offer drink when feeling generous.
+	reflex offerDrink when: !bad and !moving and generous and drinkee_point = nil {
+		list<FestivalGuest> neighbours <- FestivalGuest at_distance (guest_interaction_distance);
+		loop neighbour over: neighbours {
+			ask neighbour {
+				if !(self.moving or self.offered_drink) and self.want_drink {
+					self.thirst <- 0.75;
+					self.generosity <- 0.2;
+					myself.thirst <- 1.0;
+					self.offered_drink <- true;
+					self.offerer <- FestivalGuest(myself);
+					myself.generosity <- 0.25;
+					myself.drinkee_point <-
+					{self.location.x + rnd(-building_interaction_distance, building_interaction_distance), self.location.y + rnd(-building_interaction_distance, building_interaction_distance)};
+					write "Cycle (" + string(cycle) + ")" + myself.name + " offered drink to " + self.name;
+					break;
+				}
 
-    // Receive drink from the offerer.
-    reflex receiveDrink when: !bad and offered_drink {
-    	ask offerer {
-    		if self.location distance_to(myself.location) < guest_interaction_distance and self.has_drink {
-    			myself.thirst <- 0.25;
-    			myself.offered_drink <- false;
-    			myself.want_drink <- flip(0.2);
-    			myself.moving <- false;
-    			self.thirst <- 0.25;
-    			self.drinkee_point <- nil;
-    			self.has_drink <- false;
-    			myself.offerer <- nil;
-    			self.at_store <- true;
-    			self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-    			self.targetPoint <- self.random_point;
-    			myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-    			myself.targetPoint <- myself.random_point;
-    			write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
-    		}
-    	}
-    }
-    
+			}
+
+		}
+
+	}
+
+	// Receive drink from the offerer.
+	reflex receiveDrink when: !bad and offered_drink {
+		ask offerer {
+			if self.location distance_to (myself.location) < guest_interaction_distance and self.has_drink {
+				myself.thirst <- 0.25;
+				myself.offered_drink <- false;
+				myself.want_drink <- flip(0.2);
+				myself.moving <- false;
+				self.thirst <- 0.25;
+				self.drinkee_point <- nil;
+				self.has_drink <- false;
+				myself.offerer <- nil;
+				self.at_store <- true;
+				self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+				self.targetPoint <- self.random_point;
+				myself.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+				myself.targetPoint <- myself.random_point;
+				write "Cycle (" + string(cycle) + ")" + myself.name + " received drink from " + self.name;
+			}
+
+		}
+
+	}
+
 	// Reacting to Stages Invite------------------------
 	// Utility function
 	float get_utility (list<float> act_attributes) {
@@ -932,6 +1011,7 @@ species EvilGuest skills: [moving, fipa] {
 		write '\t(Time ' + time + '): ' + name + ' choice: ' + best_stage + " with utility " + best_utility;
 		all_stage_evaluated <- false;
 	}
+
 }
 
 //----------------------------------------------------Evil Guest Ends---------------------------------------------------------
@@ -959,6 +1039,10 @@ species SecurityGuard skills: [moving, fipa] {
 	bool reached_bad_agent <- false;
 	list<EvilGuest> badPeoples <- [];
 
+	//new feature - added separetely to merge easier
+	float violentness <- rnd(0.0, 1.0);
+	bool isViolent <- flip(violentness);
+
 	// Move to a given point.
 	reflex moveToTarget when: targetPoint != nil {
 		do goto target: targetPoint speed: move_speed * 2;
@@ -970,9 +1054,11 @@ species SecurityGuard skills: [moving, fipa] {
 		strictness <- rnd(0.0, 1.0);
 		isCorrupt <- flip(corruptness);
 		isStrict <- flip(strictness);
+		violentness <- rnd(0.0, 1.0);
+		isViolent <- flip(violentness);
 	}
 
-	// Update wallet money for English Auction
+	// Start conversing with evil guy
 	reflex recive_request_from_evil_guy when: !empty(requests) and reached_bad_agent {
 		message req <- requests[0];
 		if (req.contents[0] = 'OK') {
@@ -992,7 +1078,7 @@ species SecurityGuard skills: [moving, fipa] {
 		// security guard takes bribe if he is corrupt
 			if (isCorrupt) {
 			// take bribe
-				write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") takes " + string(req.contents[1]) + " bribe from (" + agent(req.sender).name + ")";
+				write "Cycle (" + string(cycle) + ") (" + name + ") takes " + string(req.contents[1]) + " bribe from (" + agent(req.sender).name + ")";
 				do agree with: [message:: req, contents::['Enjoy', req.contents[1]]];
 				wallet <- wallet + int(req.contents[1]);
 				eliminated <- true;
@@ -1000,15 +1086,21 @@ species SecurityGuard skills: [moving, fipa] {
 				hunting <- false;
 				reached_bad_agent <- false;
 			} else {
-				write "Cycle (" + string(cycle) + ") Agent (" + (self.name) + ") refuse to take " + string(req.contents[1]) + " bribe from (" + agent(req.sender).name + ")";
+			// escort the evil guy
+				write "Cycle (" + string(cycle) + ") (" + name + ") refuse to take " + string(req.contents[1]) + " bribe from (" + agent(req.sender).name + ")";
 				do refuse with: [message:: req, contents::[leave_msgs[1]]];
 				eliminated <- true;
 				targetPoint <- exitPoint;
+				if isViolent {
+					write "Cycle (" + string(cycle) + ") (" + name + ") insanely beating the evil guy";
+					my_icon <- image_file("../includes/data/security_violent.png");
+				}
+
 			}
 
 		} else if (req.contents[0] = 'I am Good') {
 
-		// Either the agent has bribed or change outlook i.e become good now
+		// Either the agent has bribed or fooled before and now become good agent
 			targetPoint <- securityGuardPoint;
 			eliminated <- true;
 			hunting <- false;
@@ -1036,6 +1128,7 @@ species SecurityGuard skills: [moving, fipa] {
 			do inform_information_centre(badPeoples[0]);
 			remove badPeoples[0] from: badPeoples;
 		}
+
 	}
 
 	// Maintain a list of bad peoples
@@ -1044,7 +1137,7 @@ species SecurityGuard skills: [moving, fipa] {
 		badPeoples <+ inf.contents[1];
 	}
 
-	// Escort the suspect out of the venue.
+	// Inititiate talk when reached to bad agent
 	reflex nearTarget when: hunting and location distance_to (targetPoint) < building_interaction_distance and !reached_bad_agent {
 		reached_bad_agent <- true;
 		if (!isStrict) {
@@ -1052,6 +1145,7 @@ species SecurityGuard skills: [moving, fipa] {
 		} else {
 			do start_conversation with: [to::list(bad_agent), protocol::'fipa-contract-net', performative::'inform', contents::[leave_msgs[1]]];
 		}
+
 	}
 
 	// Change state when at secturity post.
@@ -1064,11 +1158,12 @@ species SecurityGuard skills: [moving, fipa] {
 	reflex atExitGate when: eliminated and location distance_to (exitPoint) < building_interaction_distance {
 		targetPoint <- securityGuardPoint;
 		hunting <- false;
+		eliminated <- false;
 		reached_bad_agent <- false;
-	}
-}
+		my_icon <- image_file("../includes/data/security.png");
+	} }
 
-//------------------------------------------------------Security Guard Ends------------------------------------------------------
+	//------------------------------------------------------Security Guard Ends------------------------------------------------------
 
 
 //------------------------------------------------------Information Centre Begins------------------------------------------------------
@@ -1115,20 +1210,26 @@ species InformationCentre skills: [fipa] {
 		loop guest over: guests {
 			ask guest {
 				if self.near_bad {
-					myself.badPeoples <+ self.bad_agent;
-					self.near_bad <- false;
-					self.bad_location <- nil;
-					self.bad_agent <- nil;
-					self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
-					self.targetPoint <- self.random_point;
-					self.at_store <- true; // To reset the state of the person. No significance to reporting of bad person.
-					// Inform security guard to remove agents
-					do start_conversation with: [to::myself.sg_list, protocol::'fipa-contract-net', performative::'inform', contents::['Remove', myself.badPeoples[0]]];
-					write "\nCycle (" + string(cycle) + ") Agent (" + myself.name + ") Bad Guy Reported by (" + self.name + ")";
-					write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") " + string(length(myself.badPeoples)) + " complaint(s)." + myself.badPeoples;
+					if !(self.bad_agent in myself.badPeoples) {
+						myself.badPeoples <+ self.bad_agent;
+						self.near_bad <- false;
+						self.bad_location <- nil;
+						self.bad_agent <- nil;
+						self.random_point <- {rnd(worldDimension), rnd(worldDimension)};
+						self.targetPoint <- self.random_point;
+						self.at_store <- true; // To reset the state of the person. No significance to reporting of bad person.
+						// Inform security guard to remove agents
+						do start_conversation with: [to::myself.sg_list, protocol::'fipa-contract-net', performative::'inform', contents::['Remove', myself.badPeoples[0]]];
+						write "\nCycle (" + string(cycle) + ") Agent (" + myself.name + ") Bad Guy Reported by (" + self.name + ")";
+						write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") " + string(length(myself.badPeoples)) + " complaint(s)." + myself.badPeoples;
+					}
+
 				}
+
 			}
+
 		}
+
 	}
 
 	// Update the bad people list
@@ -1139,10 +1240,10 @@ species InformationCentre skills: [fipa] {
 			write "\nCycle (" + string(cycle) + ") Agent (" + name + ") Removed trouble maker (" + string(inf.contents[1]) + ")";
 			write "Cycle (" + string(cycle) + ") Agent (" + name + ") " + string(length(badPeoples)) + " complaint(s)." + badPeoples;
 		}
-	}
-}
 
-//------------------------------------------------------Information Centre Ends------------------------------------------------------
+	} }
+
+	//------------------------------------------------------Information Centre Ends------------------------------------------------------
 
 //------------------------------------------------------Journalist Begins------------------------------------------------------
 species Journalist skills: [moving, fipa] {
@@ -1232,7 +1333,7 @@ species Journalist skills: [moving, fipa] {
 
 	// Go to information centre if hungry or thirsty.
 	reflex goToInformationCentre when: (hungry or thirsty) and !at_info {
-		/*
+	/*
     	 * If already remember the point you've been to then go to there
     	 * directly instead of going to the information centre. Since,
     	 * you've already been to the information centre, the state can
@@ -1270,12 +1371,17 @@ species Journalist skills: [moving, fipa] {
 						asked <- true;
 						break;
 					}
+
 				}
+
 			}
+
 			if !asked {
 				targetPoint <- informationCentrePoint;
 			}
+
 		}
+
 	}
 
 	// Check if at information centre.
@@ -1299,7 +1405,9 @@ species Journalist skills: [moving, fipa] {
 				myself.drinksPoint <- any(myself.drinksPoints);
 				myself.targetPoint <- myself.drinksPoint;
 			}
+
 		}
+
 	}
 
 	// Check if at store and get food and replenish health at the food store.
@@ -1386,9 +1494,13 @@ species Journalist skills: [moving, fipa] {
 						write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") interviewing (" + self.name + ")";
 						break;
 					}
+
 				}
+
 			}
+
 		}
+
 	}
 
 	reflex doneInterviewing when: interviewing and mod(cycle, 10000) = 0 {
@@ -1447,6 +1559,7 @@ species Journalist skills: [moving, fipa] {
 				random_point <- {rnd(worldDimension), rnd(worldDimension)};
 				targetPoint <- random_point;
 			}
+
 		}
 
 		// when all stages invitations are considered, go to best one
@@ -1454,6 +1567,7 @@ species Journalist skills: [moving, fipa] {
 			all_stage_evaluated <- true;
 			stage_count <- 0;
 		}
+
 	}
 
 	// Go to best stage
@@ -1465,6 +1579,7 @@ species Journalist skills: [moving, fipa] {
 		write '\t(Time ' + time + '): ' + name + ' choice: ' + best_stage + " with utility " + best_utility;
 		all_stage_evaluated <- false;
 	}
+
 }
 
 // Food Shop.
@@ -1476,6 +1591,7 @@ species FoodShop schedules: [] frequency: 0 {
 	aspect icon {
 		draw my_icon size: 10 * icon_size;
 	}
+
 }
 
 // Drinks Shop.
@@ -1487,6 +1603,7 @@ species DrinksShop schedules: [] frequency: 0 {
 	aspect icon {
 		draw my_icon size: 10 * icon_size;
 	}
+
 }
 
 // Drinks Shop.
@@ -1498,6 +1615,7 @@ species ExitGate schedules: [] frequency: 0 {
 	aspect icon {
 		draw my_icon size: 10 * icon_size;
 	}
+
 }
 
 // --------------------------------------------------Stage Begins---------------------------------------------------
@@ -1533,11 +1651,13 @@ species Stage skills: [fipa] {
 			if (string(information.contents[0]) = 'I am coming') {
 				audience <+ agent(information.sender);
 			}
+
 		}
 
 		if length(audience) > 0 {
 			showing_act <- true;
 		}
+
 	}
 
 	// Change act attributes once it ends
@@ -1559,7 +1679,9 @@ species Stage skills: [fipa] {
 		} else {
 			draw circle(8) color: mycolors[1] border: #black;
 		}
+
 	}
+
 }
 // --------------------------------------------------Stage Ends---------------------------------------------------
 // Experiment.
@@ -1579,11 +1701,12 @@ experiment festival type: gui {
 			species Stage aspect: icon;
 		}
 
-		inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
-		inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
-		inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
-		//		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
+		//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
+		//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
+		//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
+		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
 		//      inspect "stage" value: Stage attributes: ["showing_act"] type: table;
-		inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
+		//inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
 	}
+
 }
