@@ -30,8 +30,7 @@ global {
 
 	//globals for Stage
 	int nb_stage <- 3;
-	list<point>
-	stages_locs <- [{worldDimension / 4, worldDimension / 4}, {worldDimension / 4, worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension / 4}];
+	list<point> stages_locs <- [{worldDimension / 4, worldDimension / 4}, {worldDimension / 4, worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension / 4}];
 	list<string> roles <- ['band', 'singer', 'dancer'];
 
 	init {
@@ -1599,6 +1598,13 @@ species Journalist skills: [moving, fipa] {
 		all_stage_evaluated <- false;
 	}
 
+	reflex leaveOnFestivalEnd when: mod(cycle, 10000) = 0 {
+		int remaining <- length(FestivalGuest) + length(EvilGuest);
+		if remaining = 0 {
+			curious <- false;
+		}
+	}
+
 }
 
 // Food Shop.
@@ -1725,13 +1731,13 @@ experiment festival type: gui {
 			species Stage aspect: icon;
 		}
 
-		//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
+		inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
 		//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
 		//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
 		//inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
-		//      inspect "stage" value: Stage attributes: ["showing_act"] type: table;
+		//inspect "stage" value: Stage attributes: ["showing_act"] type: table;
 		//inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
-		inspect "shyness" value: FestivalGuest attributes: ["shy"];
+		//inspect "shyness" value: FestivalGuest attributes: ["shy"];
 	}
 
 }
