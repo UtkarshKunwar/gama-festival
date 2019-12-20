@@ -30,7 +30,8 @@ global {
 
 	//globals for Stage
 	int nb_stage <- 3;
-	list<point> stages_locs <- [{worldDimension / 4, worldDimension / 4}, {worldDimension / 4, worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension / 4}];
+	list<point>
+	stages_locs <- [{worldDimension / 4, worldDimension / 4}, {worldDimension / 4, worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension * (3 / 4)}, {worldDimension * (3 / 4), worldDimension / 4}];
 	list<string> roles <- ['band', 'singer', 'dancer'];
 
 	init {
@@ -79,8 +80,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Personality
-	bool shy <- flip (0.3);
-
+	bool shy <- flip(0.3);
 	float max_boredom <- 1.0;
 	float boredom_consum <- shy ? 0.00002 : 0.00001;
 
@@ -118,7 +118,7 @@ species FestivalGuest skills: [moving, fipa] {
 	float generosity_consum <- 0.00005;
 	float generosity <- rnd(max_generosity) update: generosity + generosity_consum max: max_generosity;
 	bool generous <- false;
-	bool want_drink <- shy? flip(0.3) : flip (0.7);
+	bool want_drink <- shy ? flip(0.3) : flip(0.7);
 	bool offered_drink <- false;
 	bool has_drink <- false;
 	point drinkee_point <- nil;
@@ -611,20 +611,20 @@ species FestivalGuest skills: [moving, fipa] {
 
 	// Shy away when near a lot of people.
 	reflex shyAway when: !moving and shy and flip(0.5) and mod(cycle, 10000) = 0 {
-		list<EvilGuest> evil_neighbours <- EvilGuest at_distance(3 * guest_interaction_distance);
-		list<FestivalGuest> neighbours <- FestivalGuest at_distance(2 * guest_interaction_distance);
-		list<Journalist> journalist_neighbours <- Journalist at_distance(5 * guest_interaction_distance);
-
+		list<EvilGuest> evil_neighbours <- EvilGuest at_distance (3 * guest_interaction_distance);
+		list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
+		list<Journalist> journalist_neighbours <- Journalist at_distance (5 * guest_interaction_distance);
 		int count <- length(neighbours) + length(evil_neighbours) + length(journalist_neighbours);
 		int max_count <- int((number_of_evil_guys + number_of_guests + number_of_journalists) / 4);
-
 		if count >= max_count {
 			random_point <- {rnd(worldDimension), rnd(worldDimension)};
 			targetPoint <- random_point;
 			at_store <- true;
 			write "Cycle (" + cycle + ") (" + name + ") feeling shy. Moving to new location.";
 		}
+
 	}
+
 }
 
 //----------------------------------------------------Evil Guest begins---------------------------------------------------------
@@ -1603,6 +1603,7 @@ species Journalist skills: [moving, fipa] {
 		if remaining = 0 {
 			curious <- false;
 		}
+
 	}
 
 }
@@ -1656,13 +1657,13 @@ species Stage skills: [fipa] {
 
 	//Send invitation to all guests in the festival to join stage shows.
 	reflex informGuestsAboutActs when: mod(int(time), (act_duration + rest_duration)) = 0 and int(time) > 0 {
-		write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
 		role <- any(['band', 'singer', 'dancer']);
-		if list(FestivalGuest + EvilGuest + Journalist) != nil {
+		if !empty(list(FestivalGuest + EvilGuest + Journalist)) {
+			write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
 			do start_conversation with:
 			[to::list(FestivalGuest + EvilGuest + Journalist), protocol::'fipa-contract-net', performative::'inform', contents::['Invitation', act_attributes, role]];
 		} else {
-			write '\t(Time ' + time + '): ' + name + ' says there is no one to receive messages.';
+			write '\t(Time ' + time + '): ' + name + ' ALL DEAD. No one to invite.';
 		}
 
 	}
