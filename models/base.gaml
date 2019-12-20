@@ -1135,6 +1135,15 @@ species SecurityGuard skills: [moving, fipa] {
 		do start_conversation with: [to::list(InformationCentre), protocol::'fipa-contract-net', performative::'inform', contents::['Removed', removed_agent]];
 	}
 
+	//Do not continue hunt when bad agent die out itself
+	reflex discontinueHunt when: hunting and dead(bad_agent) {
+		write "Cycle (" + string(cycle) + ") Agent (" + "bad agent killed himself.";
+		targetPoint <- securityGuardPoint;
+		eliminated <- true;
+		hunting <- false;
+		reached_bad_agent <- false;
+	}
+
 	// Hunts bad people one by one
 	reflex getTarget when: length(badPeoples) > 0 and !hunting {
 		if !dead(badPeoples[0]) {
@@ -1732,7 +1741,7 @@ experiment festival type: gui {
 			species Stage aspect: icon;
 		}
 
-		inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
+		//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
 		//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
 		//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
 		//inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
