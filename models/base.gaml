@@ -448,7 +448,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Look for drinking buddies when feeling generous.
-	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil and (!shy or flip(0.5)) {
+	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil and (!shy or flip(0.5)) and (length(DrinksShop at_distance(5 * building_interaction_distance)) != 0) {
 		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
 			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
@@ -470,7 +470,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Offer drink when feeling generous.
-	reflex offerDrink when: !moving and generous and drinkee_point = nil and !shy {
+	reflex offerDrink when: !moving and generous and drinkee_point = nil and (!shy or flip(0.5)) and (length(DrinksShop at_distance(2 * guest_interaction_distance)) != 0) {
 		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
 			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
@@ -603,7 +603,9 @@ species FestivalGuest skills: [moving, fipa] {
 	reflex gotoBestStage when: all_stage_evaluated {
 		do start_conversation with: [to::list(best_stage), protocol::'fipa-contract-net', performative::'inform', contents::['I am coming']];
 		targetPoint <- best_stage_loc;
-		targetPoint <- {targetPoint.x + rnd(-10, 10), targetPoint.y + rnd(8, 10)};
+		float dx <- shy ? rnd(-20.0, 20.0) : rnd(-10.0, 10.0);
+		float dy <- shy ? rnd(32.0, 40.0) : rnd(8.0, 10.0);
+		targetPoint <- {targetPoint.x + dx, targetPoint.y + rnd(8, 10)};
 		best_utility <- stage_utility[stage_locs index_of (best_stage_loc)];
 		write '\t(Time ' + time + '): ' + name + ' choice: ' + best_stage + " with utility " + best_utility;
 		all_stage_evaluated <- false;
@@ -1173,7 +1175,7 @@ species SecurityGuard skills: [moving, fipa] {
 	}
 
 	// Change state when at exit gate.
-	reflex atExitGate when: eliminated and location distance_to (exitPoint) < building_interaction_distance {
+	reflex atExitGate when: eliminated or location distance_to (exitPoint) < building_interaction_distance {
 		targetPoint <- securityGuardPoint;
 		hunting <- false;
 		eliminated <- false;
