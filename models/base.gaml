@@ -472,8 +472,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Offer drink when feeling generous.
-	reflex offerDrink when: !moving and generous and party and drinkee_point = nil and (!friendly or flip(0.5)) and (length(DrinksShop at_distance (2 * guest_interaction_distance)) !=
-	0) {
+	reflex offerDrink when: !moving and generous and drinkee_point = nil and (!friendly or flip(0.5)) and (length(DrinksShop at_distance (2 * guest_interaction_distance)) != 0) {
 		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
 			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
