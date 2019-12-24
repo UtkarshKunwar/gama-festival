@@ -1278,11 +1278,11 @@ species InformationCentre skills: [fipa] {
 //------------------------------------------------------Journalist Begins------------------------------------------------------
 species Journalist skills: [moving, fipa] {
 // Display icon of the food shop.
-	image_file my_icon <- image_file("../includes/data/journalist.png");
+	file my_icon <- obj_file("../includes/mesh/journalist.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 7 * icon_size;
+		draw my_icon size: 5 * icon_size at: location + {0, 0, 3.75 * icon_size} color: #grey;
 	}
 
 	float max_curious <- 1.0;
