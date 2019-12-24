@@ -1730,10 +1730,10 @@ species Stage skills: [fipa] {
 	// Display character of the guest.
 	aspect range {
 		if (showing_act) {
-			draw stage size: 15#m color: any(mycolors) border: #black;
+			draw stage size: 15#m color: any(mycolors);
 			draw replace(role, first(role), upper_case(first(role))) size: 10#m color: #black at: location + {-3.5#m, 5#m, 1#m};
 		} else {
-			draw stage size: 15#m color: mycolors[1] border: #black;
+			draw stage size: 15#m color: mycolors[1];
 		}
 	}
 
