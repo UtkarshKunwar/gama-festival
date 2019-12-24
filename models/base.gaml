@@ -1688,15 +1688,24 @@ species Stage skills: [fipa] {
 
 // Stage variables
 	int act_duration <- 10000;
-	int rest_duration <- 50000;
+	int rest_duration <- 5000;
 	bool showing_act <- false;
 	string role <- nil;
 	list<float> act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
 	list<agent> audience <- nil;
+	list<int> dance_timer <- [100, 200];
+	list<int> dance_frames <- [34, 27];
+	list<int> band_timer <- [100, 80];
+	list<int> band_frames <- [25, 32];
+	list<int> singer_timer <- [50, 100];
+	list<int> singer_frames <- [109, 17];
+	int timer <- 0;
+	bool aspect_decided <- false;
+	string icon_folder <- nil;
+	int max_frames <- 0;
 
 	//Send invitation to all guests in the festival to join stage shows.
 	reflex informGuestsAboutActs when: mod(int(time), (act_duration + rest_duration)) = 0 and int(time) > 0 {
-		role <- any(['band', 'singer', 'dancer']);
 		if !empty(list(FestivalGuest + EvilGuest + Journalist)) {
 			write '\n(Time ' + time + '): ' + name + ' sends a invitation to all the guests.';
 			do start_conversation with:
@@ -1713,6 +1722,7 @@ species Stage skills: [fipa] {
 		do start_conversation with: [to::audience, protocol::'fipa-contract-net', performative::'inform', contents::['Act ends', role]];
 		showing_act <- false;
 		audience <- nil;
+		my_icon <- image_file("../includes/data/stages/" + role + ".png");
 	}
 
 	// Make a record of guests
@@ -1726,6 +1736,7 @@ species Stage skills: [fipa] {
 
 		if length(audience) > 0 {
 			showing_act <- true;
+			aspect_decided <- false;
 		}
 
 	}
@@ -1737,6 +1748,60 @@ species Stage skills: [fipa] {
 
 	image_file my_icon <- image_file("../includes/data/stages/" + role + ".png");
 	list<rgb> mycolors <- [rgb(192, 252, 15, 100), rgb(15, 192, 252, 100), rgb(252, 15, 192, 100)];
+
+	reflex decideDancerLook when: role = 'dancer' and !aspect_decided {
+		icon_folder <- any("dancer1", "dancer2");
+		if (icon_folder = "dancer1") {
+			timer <- dance_timer[0];
+			max_frames <- dance_frames[0];
+		} else {
+			timer <- dance_timer[1];
+			max_frames <- dance_frames[1];
+		}
+
+		aspect_decided <- true;
+		cur_ind <- 1;
+	}
+
+	reflex decideBandLook when: role = 'band' and !aspect_decided {
+		icon_folder <- first("band1", "band2"); // show only band1
+		if (icon_folder = "band1") {
+			timer <- band_timer[0];
+			max_frames <- band_frames[0];
+		} else {
+			timer <- band_timer[1];
+			max_frames <- band_frames[1];
+		}
+
+		aspect_decided <- true;
+		cur_ind <- 1;
+	}
+
+	reflex decideSingerLook when: role = 'singer' and !aspect_decided {
+		icon_folder <- first("singer1", "singer2"); // show only singer1
+		if (icon_folder = "singer1") {
+			timer <- singer_timer[0];
+			max_frames <- singer_frames[0];
+		} else {
+			timer <- singer_timer[1];
+			max_frames <- singer_frames[1];
+		}
+
+		aspect_decided <- true;
+		cur_ind <- 1;
+	}
+
+	int cur_ind <- 1;
+	bool animation_on <- false;
+
+	reflex playAnimation when: aspect_decided and showing_act and mod(int(time), timer) = 0 {
+		my_icon <- image_file("../includes/data/stages/giff/" + icon_folder + "/" + role + string(cur_ind) + ".png");
+		cur_ind <- cur_ind + 1;
+		if (cur_ind > max_frames) {
+			cur_ind <- 1;
+		}
+
+	}
 
 	aspect icon {
 		draw my_icon size: 10;
@@ -1756,6 +1821,11 @@ species Stage skills: [fipa] {
 // --------------------------------------------------Stage Ends---------------------------------------------------
 // Experiment.
 experiment festival type: gui {
+	parameter "#FestivalGuest: " var: number_of_guests min: 5 max: 50 category: "FestivalGuest";
+	parameter "#Journalist: " var: number_of_journalists min: 2 max: 10 category: "Journalist";
+	parameter "#EvilGuest: " var: number_of_evil_guys min: 3 max: 20 category: "EvilGuest";
+	parameter "Move seped: " var: move_speed min: 0.01 max: 0.1 category: "All";
+	parameter "Dance speed: " var: dance_speed min: 0.01 max: 0.1 category: "All";
 	output {
 	// Display map.
 		display simulation type: opengl {
