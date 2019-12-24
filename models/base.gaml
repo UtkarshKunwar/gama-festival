@@ -1623,11 +1623,11 @@ species Journalist skills: [moving, fipa] {
 // Food Shop.
 species FoodShop schedules: [] frequency: 0 {
 // Display icon of the food shop.
-	image_file my_icon <- image_file("../includes/data/food.png");
+	file my_icon <- obj_file("../includes/mesh/food.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 10 * icon_size;
+		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #orange;
 	}
 
 }
@@ -1635,11 +1635,11 @@ species FoodShop schedules: [] frequency: 0 {
 // Drinks Shop.
 species DrinksShop schedules: [] frequency: 0 {
 // Display icon of the drinks shop.
-	image_file my_icon <- image_file("../includes/data/drinks.png");
+	file my_icon <- obj_file("../includes/mesh/drinks.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 10 * icon_size;
+		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #green;
 	}
 
 }
@@ -1647,11 +1647,11 @@ species DrinksShop schedules: [] frequency: 0 {
 // Drinks Shop.
 species ExitGate schedules: [] frequency: 0 {
 // Display icon of the drinks shop.
-	image_file my_icon <- image_file("../includes/data/exit.png");
+	file my_icon <- obj_file("../includes/mesh/exit.obj", 90::{0, -1, 0});
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 10 * icon_size;
+		draw my_icon size: 5 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #red;
 	}
 
 }
