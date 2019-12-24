@@ -1312,6 +1312,8 @@ species Journalist skills: [moving, fipa] {
 	point random_point <- nil;
 	point targetPoint <- nil;
 	bool controversial_questions <- flip(0.5);
+	bool party <- flip(0.5);
+	bool interest_matched <- false;
 
 	// Stage variables
 	list<float> my_preferences <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
@@ -1515,6 +1517,10 @@ species Journalist skills: [moving, fipa] {
 							myself.random_point <- {myself.random_point.x, 0.0};
 						}
 
+						if (myself.party = self.party) {
+							myself.interest_matched <- true;
+						}
+
 						myself.targetPoint <- myself.random_point;
 						myself.random_point <- nil;
 						myself.at_store <- true;
@@ -1546,7 +1552,15 @@ species Journalist skills: [moving, fipa] {
 
 	}
 
-	reflex doneInterviewing when: interviewing and mod(cycle, 10000) = 0 {
+	reflex doneInterviewing when: interviewing and !interest_matched and mod(cycle, 10000) = 0 {
+		interviewed_count <- interviewed_count + 1;
+		interviewing <- false;
+		random_point <- {rnd(worldDimension), rnd(worldDimension)};
+		targetPoint <- random_point;
+	}
+
+	reflex doneInterviewingProlong when: interviewing and interest_matched and mod(cycle, 12000) = 0 {
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ") prolongs the interview.";
 		interviewed_count <- interviewed_count + 1;
 		interviewing <- false;
 		random_point <- {rnd(worldDimension), rnd(worldDimension)};
