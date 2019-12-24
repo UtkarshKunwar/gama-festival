@@ -1848,6 +1848,17 @@ experiment festival type: gui {
 
 		// Display map.
 		display Festival type: opengl {
+			graphics "Legend" refresh: false {
+				draw square(18#m) at: {9, 9} color: #white border: #black;
+				draw "Festival Guest" at: {5, 3.5} color: #black size: 0.1#m;
+				draw "Evil Guy" at: {5, 7.5} color: #black size: 0.1#m;
+				draw "Security Guard" at: {5, 11.5} color: #black size: 0.1#m;
+				draw "Journalist" at: {5, 15.5} color: #black size: 0.1#m;
+			}
+			image image_file("../includes/data/dance.png") position: {1.1, 1.1} size: {0.03, 0.03};
+			image image_file("../includes/data/bad.png") position: {1.1, 5.1} size: {0.03, 0.03};
+			image image_file("../includes/data/security.png") position: {1.1, 9.1} size: {0.03, 0.03};
+			image image_file("../includes/data/journalist.png") position: {1.1, 13.1} size: {0.03, 0.03};
 			species FestivalGuest aspect: icon;
 			species EvilGuest aspect: icon;
 			species InformationCentre aspect: icon refresh: false;
