@@ -1758,7 +1758,7 @@ species Stage skills: [fipa] {
 experiment festival type: gui {
 	output {
 	// Display map.
-		display myDisplay type: opengl {
+		display simulation type: opengl {
 			species FestivalGuest aspect: icon;
 			species EvilGuest aspect: icon;
 			species InformationCentre aspect: icon refresh: false;
@@ -1771,20 +1771,29 @@ experiment festival type: gui {
 			species Stage aspect: icon;
 		}
 
-		display chart {
-			chart "my_chart" type: histogram {
-				datalist (FestivalGuest collect each.name) value: (FestivalGuest collect each.distance_travelled);
+		display chart1 refresh: every(5 #cycles) {
+			chart "Evil behaviour" type: series {
+				data "Compalaints" value: (InformationCentre collect length(each.badPeoples)) color: #green;
+				data "Alive" value: length(EvilGuest) color: #red;
 			}
 
 		}
 
-		//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
-		//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
-		//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
-		//inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
-		//inspect "stage" value: Stage attributes: ["showing_act"] type: table;
-		//inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
-		//inspect "shyness" value: FestivalGuest attributes: ["friendly"];
+		display chart2 refresh: every(5 #cycles) {
+			chart "Guard Wallet" type: series {
+				data "Guard Wallet" value: (SecurityGuard collect each.wallet) color: #blue;
+			}
+
+		}
+
 	}
+
+	//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
+	//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
+	//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
+	//inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
+	//inspect "stage" value: Stage attributes: ["showing_act"] type: table;
+	//inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
+	//inspect "shyness" value: FestivalGuest attributes: ["friendly"];
 
 }
