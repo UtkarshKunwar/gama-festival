@@ -80,7 +80,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Personality
-	bool party <- flip(0.5); // if not party it is implied that the guest is chill 
+	bool party <- flip(0.5); // if not party it is implied that the guest is chill
 	bool friendly <- flip(0.3);
 	float max_boredom <- 1.0;
 	float boredom_consum <- friendly ? 0.00002 : 0.00001;
@@ -1827,20 +1827,6 @@ experiment festival type: gui {
 	parameter "Move seped: " var: move_speed min: 0.01 max: 0.1 category: "All";
 	parameter "Dance speed: " var: dance_speed min: 0.01 max: 0.1 category: "All";
 	output {
-	// Display map.
-		display simulation type: opengl {
-			species FestivalGuest aspect: icon;
-			species EvilGuest aspect: icon;
-			species InformationCentre aspect: icon refresh: false;
-			species FoodShop aspect: icon refresh: false;
-			species DrinksShop aspect: icon refresh: false;
-			species SecurityGuard aspect: icon;
-			species ExitGate aspect: icon refresh: false;
-			species Journalist aspect: icon;
-			species Stage aspect: range;
-			species Stage aspect: icon;
-		}
-
 		display chart1 refresh: every(5 #cycles) {
 			chart "Evil behaviour" type: series {
 				data "Compalaints" value: (InformationCentre collect length(each.badPeoples)) color: #green;
@@ -1854,6 +1840,20 @@ experiment festival type: gui {
 				data "Guard Wallet" value: (SecurityGuard collect each.wallet) color: #blue;
 			}
 
+		}
+
+		// Display map.
+		display simulation type: opengl {
+			species FestivalGuest aspect: icon;
+			species EvilGuest aspect: icon;
+			species InformationCentre aspect: icon refresh: false;
+			species FoodShop aspect: icon refresh: false;
+			species DrinksShop aspect: icon refresh: false;
+			species SecurityGuard aspect: icon;
+			species ExitGate aspect: icon refresh: false;
+			species Journalist aspect: icon;
+			species Stage aspect: range;
+			species Stage aspect: icon;
 		}
 
 	}
