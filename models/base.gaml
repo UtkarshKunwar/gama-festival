@@ -189,6 +189,7 @@ species FestivalGuest skills: [moving, fipa] {
 		} else {
 			bored <- false;
 		}
+
 	}
 
 	// Check if generous or not. Don't change priority if already doing something.
@@ -205,7 +206,6 @@ species FestivalGuest skills: [moving, fipa] {
 	reflex dance when: targetPoint = nil and !(hungry or thirsty) {
 		do wander speed: party ? dance_speed * 3 : dance_speed bounds: square(0.5 #m);
 		moving <- false;
-
 		if mod(cycle, 1000) = 0 {
 			if icon_status = 0 {
 				my_icon <- obj_file("../includes/mesh/normal_person2.obj", 90::{-1, 0, 0});
@@ -214,6 +214,7 @@ species FestivalGuest skills: [moving, fipa] {
 				my_icon <- obj_file("../includes/mesh/normal_person1.obj", 90::{-1, 0, 0});
 				icon_status <- 0;
 			}
+
 		}
 
 		// Check if dancing with someone. If not then you get bored.
@@ -636,7 +637,6 @@ species EvilGuest skills: [moving, fipa] {
 	file my_icon <- obj_file("../includes/mesh/evil_person1.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
 	int icon_status <- 0;
-
 	bool thirsty <- false;
 	float thirst <- rnd(max_thirst) update: thirst + thirst_consum max: max_thirst;
 	float max_boredom <- 1.0;
@@ -742,7 +742,6 @@ species EvilGuest skills: [moving, fipa] {
 	reflex dance when: targetPoint = nil {
 		do wander speed: dance_speed * ((bad) ? 2 : 1) bounds: square(0.5 #m);
 		moving <- false;
-
 		if mod(cycle, 1000) = 0 {
 			if icon_status = 0 {
 				my_icon <- obj_file("../includes/mesh/evil_person2.obj", 90::{-1, 0, 0});
@@ -751,6 +750,7 @@ species EvilGuest skills: [moving, fipa] {
 				my_icon <- obj_file("../includes/mesh/evil_person1.obj", 90::{-1, 0, 0});
 				icon_status <- 0;
 			}
+
 		}
 
 		// Check if dancing with someone. If not then you get bored.
@@ -889,7 +889,7 @@ species EvilGuest skills: [moving, fipa] {
 				}
 
 			} // deal with stages invitation and closure
-			else if (species(information.sender) = Stage) {
+else if (species(information.sender) = Stage) {
 				if (information.contents[0] = 'Invitation') {
 					stage_count <- stage_count + 1;
 					// Evaluate utility of the act
@@ -1041,7 +1041,6 @@ species SecurityGuard skills: [moving, fipa] {
 // Display icon of the information centre.
 	file my_icon <- obj_file("../includes/mesh/guard.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
-
 	bool hunting <- false;
 	bool eliminated <- false;
 	float corruptness <- rnd(0.0, 1.0);
@@ -1190,9 +1189,8 @@ species SecurityGuard skills: [moving, fipa] {
 	}
 
 	aspect icon {
-		draw my_icon size: 6 * icon_size at: location + {0, 0, 2.5 * icon_size} color: isViolent? #blue : #black;
-	}
-}
+		draw my_icon size: 6 * icon_size at: location + {0, 0, 2.5 * icon_size} color: isViolent ? #blue : #black;
+	} }
 
 	//------------------------------------------------------Security Guard Ends------------------------------------------------------
 
@@ -1740,17 +1738,18 @@ species Stage skills: [fipa] {
 	int icon_status <- 0;
 
 	aspect icon {
-		draw my_icon size: 4#m at: location + {0, 0, 3.5#m} color: rgb(75, 75, 75);
+		draw my_icon size: 4 #m at: location + {0, 0, 3.5 #m} color: rgb(75, 75, 75);
 	}
 
 	reflex animate when: showing_act and mod(cycle, 2000) {
 		if icon_status = 0 {
-			my_icon <- obj_file("../includes/mesh/stages/" + role + "2.obj", 90::{-1, 0 , 0});
+			my_icon <- obj_file("../includes/mesh/stages/" + role + "2.obj", 90::{-1, 0, 0});
 			icon_status <- 1;
 		} else if icon_status = 1 {
 			my_icon <- obj_file("../includes/mesh/stages/" + role + "1.obj", 90::{-1, 0, 0});
 			icon_status <- 0;
 		}
+
 	}
 
 	file stage <- obj_file("../includes/mesh/stages/stage.obj", 90::{0, 0, 1});
@@ -1758,20 +1757,27 @@ species Stage skills: [fipa] {
 	// Display character of the guest.
 	aspect range {
 		if (showing_act) {
-			draw stage size: 15#m color: any(mycolors);
-			draw replace(role, first(role), upper_case(first(role))) size: 10#m color: #black at: location + {-3.5#m, 5#m, 1#m};
+			draw stage size: 15 #m color: any(mycolors);
+			draw replace(role, first(role), upper_case(first(role))) size: 10 #m color: #black at: location + {-3.5 #m, 5 #m, 1 #m};
 		} else {
-			draw stage size: 15#m color: mycolors[1];
+			draw stage size: 15 #m color: mycolors[1];
 		}
+
 	}
 
 }
 // --------------------------------------------------Stage Ends---------------------------------------------------
 // Experiment.
 experiment festival type: gui {
+	parameter "#FestivalGuest: " var: number_of_guests min: 5 max: 50 category: "FestivalGuest";
+	parameter "#Journalist: " var: number_of_journalists min: 2 max: 10 category: "Journalist";
+	parameter "#EvilGuest: " var: number_of_evil_guys min: 3 max: 20 category: "EvilGuest";
+	parameter "Move seped: " var: move_speed min: 0.01 max: 0.1 category: "All";
+	parameter "Dance speed: " var: dance_speed min: 0.01 max: 0.1 category: "All";
 	output {
 	// Display map.
-		display myDisplay type: opengl ambient_light: 255 camera_pos: {-6.4272,125.1815,112.7103} camera_look_pos: {41.5621,59.1299,-8.3277} camera_up_vector: {0.4873,0.6707,0.5592} {
+		display myDisplay type: opengl ambient_light: 255 camera_pos: {-6.4272, 125.1815, 112.7103} camera_look_pos: {41.5621, 59.1299, -8.3277} camera_up_vector:
+		{0.4873, 0.6707, 0.5592} {
 			image image_file("../includes/data/grass.jpg") refresh: false transparency: 0.4;
 			species FestivalGuest aspect: icon;
 			species EvilGuest aspect: icon;
