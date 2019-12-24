@@ -61,7 +61,7 @@ global {
 	// General guest.
 species FestivalGuest skills: [moving, fipa] {
 // Display icon of the person.
-	image_file my_icon <- image_file("../includes/data/dance.png");
+	file my_icon <- obj_file("../includes/mesh/normal_person1.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
 
 	/*
@@ -74,10 +74,6 @@ species FestivalGuest skills: [moving, fipa] {
      * 4 : Bored
      */
 	int icon_status <- 0;
-
-	aspect icon {
-		draw my_icon size: 7 * icon_size;
-	}
 
 	// Personality
 	bool shy <- flip(0.3);
@@ -140,6 +136,10 @@ species FestivalGuest skills: [moving, fipa] {
 	float max_utility <- 0.0;
 	int stage_count <- 0;
 
+	aspect icon {
+		draw my_icon size: 3.5 * icon_size at: location + {0, 0, 2.4 * icon_size} color: #grey;
+	}
+
 	// Caluclates the distance travelled by the person.
 	reflex calculateDistance when: moving {
 		distance_travelled <- distance_travelled + move_speed * step;
@@ -185,20 +185,9 @@ species FestivalGuest skills: [moving, fipa] {
 	reflex isBored when: !(hungry or thirsty or moving) {
 		if boredom >= 1.0 {
 			bored <- true;
-			if icon_status != 4 {
-				my_icon <- image_file("../includes/data/bored.png");
-				icon_status <- 4;
-			}
-
 		} else {
 			bored <- false;
-			if icon_status != 0 {
-				my_icon <- image_file("../includes/data/dance.png");
-				icon_status <- 0;
-			}
-
 		}
-
 	}
 
 	// Check if generous or not. Don't change priority if already doing something.
@@ -215,6 +204,16 @@ species FestivalGuest skills: [moving, fipa] {
 	reflex dance when: targetPoint = nil and !(hungry or thirsty) {
 		do wander speed: dance_speed bounds: square(0.5 #m);
 		moving <- false;
+
+		if mod(cycle, 1000) = 0 {
+			if icon_status = 0 {
+				my_icon <- obj_file("../includes/mesh/normal_person2.obj", 90::{-1, 0, 0});
+				icon_status <- 1;
+			} else {
+				my_icon <- obj_file("../includes/mesh/normal_person1.obj", 90::{-1, 0, 0});
+				icon_status <- 0;
+			}
+		}
 
 		// Check if dancing with someone. If not then you get bored.
 		list<FestivalGuest> neighbours <- (FestivalGuest at_distance guest_interaction_distance);
@@ -632,13 +631,9 @@ species FestivalGuest skills: [moving, fipa] {
 //----------------------------------------------------Evil Guest begins---------------------------------------------------------
 species EvilGuest skills: [moving, fipa] {
 // Display icon of the person.
-	image_file my_icon <- image_file("../includes/data/bad.png");
+	file my_icon <- obj_file("../includes/mesh/evil_person1.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
 	int icon_status <- 0;
-
-	aspect icon {
-		draw my_icon size: 7 * icon_size;
-	}
 
 	bool thirsty <- false;
 	float thirst <- rnd(max_thirst) update: thirst + thirst_consum max: max_thirst;
@@ -681,6 +676,10 @@ species EvilGuest skills: [moving, fipa] {
 	float max_utility <- 0.0;
 	int stage_count <- 0;
 
+	aspect icon {
+		draw my_icon size: 3.5 * icon_size at: location + {0, 0, 2.4 * icon_size} color: #darkred;
+	}
+
 	// Caluclates the distance travelled by the person.
 	reflex calculateDistance when: moving {
 		distance_travelled <- distance_travelled + move_speed * step;
@@ -721,18 +720,8 @@ species EvilGuest skills: [moving, fipa] {
 	reflex isBored when: !moving {
 		if boredom >= 1.0 {
 			bored <- true;
-			if icon_status != 4 {
-				my_icon <- image_file("../includes/data/bored.png");
-				icon_status <- 4;
-			}
-
 		} else {
 			bored <- false;
-			if icon_status != 0 {
-				my_icon <- image_file("../includes/data/bad.png");
-				icon_status <- 0;
-			}
-
 		}
 
 	}
@@ -751,6 +740,16 @@ species EvilGuest skills: [moving, fipa] {
 	reflex dance when: targetPoint = nil {
 		do wander speed: dance_speed * ((bad) ? 2 : 1) bounds: square(0.5 #m);
 		moving <- false;
+
+		if mod(cycle, 1000) = 0 {
+			if icon_status = 0 {
+				my_icon <- obj_file("../includes/mesh/evil_person2.obj", 90::{-1, 0, 0});
+				icon_status <- 1;
+			} else {
+				my_icon <- obj_file("../includes/mesh/evil_person1.obj", 90::{-1, 0, 0});
+				icon_status <- 0;
+			}
+		}
 
 		// Check if dancing with someone. If not then you get bored.
 		list<FestivalGuest> neighbours <- (FestivalGuest at_distance guest_interaction_distance);
@@ -888,7 +887,7 @@ species EvilGuest skills: [moving, fipa] {
 				}
 
 			} // deal with stages invitation and closure
-else if (species(information.sender) = Stage) {
+			else if (species(information.sender) = Stage) {
 				if (information.contents[0] = 'Invitation') {
 					stage_count <- stage_count + 1;
 					// Evaluate utility of the act
@@ -1189,7 +1188,7 @@ species SecurityGuard skills: [moving, fipa] {
 	}
 
 	aspect icon {
-		draw my_icon size: 5 * icon_size at: location + {0, 0, 3.75 * icon_size} color: isViolent? rgb(100, 0, 0) : #black;
+		draw my_icon size: 6 * icon_size at: location + {0, 0, 2.5 * icon_size} color: isViolent? #blue : #black;
 	}
 }
 
@@ -1282,7 +1281,7 @@ species Journalist skills: [moving, fipa] {
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 5 * icon_size at: location + {0, 0, 3.75 * icon_size} color: #grey;
+		draw my_icon size: 6 * icon_size at: location + {0, 0, 2.5 * icon_size} color: #indigo;
 	}
 
 	float max_curious <- 1.0;
@@ -1731,8 +1730,8 @@ species Stage skills: [fipa] {
 experiment festival type: gui {
 	output {
 	// Display map.
-		display myDisplay type: opengl ambient_light: 255 {
-			image image_file("../includes/data/grass.jpg") refresh: false transparency: 0.6;
+		display myDisplay type: opengl ambient_light: 255 camera_pos: {-6.4272,125.1815,112.7103} camera_look_pos: {41.5621,59.1299,-8.3277} camera_up_vector: {0.4873,0.6707,0.5592} {
+			image image_file("../includes/data/grass.jpg") refresh: false transparency: 0.4;
 			species FestivalGuest aspect: icon;
 			species EvilGuest aspect: icon;
 			species InformationCentre aspect: icon refresh: false;
