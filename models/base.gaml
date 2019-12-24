@@ -76,9 +76,10 @@ species FestivalGuest skills: [moving, fipa] {
 	int icon_status <- 0;
 
 	// Personality
-	bool shy <- flip(0.3);
+	bool party <- flip(0.5); // if not party it is implied that the guest is chill 
+	bool friendly <- flip(0.3);
 	float max_boredom <- 1.0;
-	float boredom_consum <- shy ? 0.00002 : 0.00001;
+	float boredom_consum <- friendly ? 0.00002 : 0.00001;
 
 	// Hunger and thirst updates.
 	float hunger <- rnd(max_hunger) update: hunger + hunger_consum max: max_hunger;
@@ -107,14 +108,14 @@ species FestivalGuest skills: [moving, fipa] {
 	float distance_travelled <- 0.0;
 	float wallet <- rnd(0.0, 500.0);
 	bool being_interviewed <- false;
-	bool want_to_be_interviewed <- shy ? flip(0.3) : flip(0.7);
+	bool want_to_be_interviewed <- friendly ? flip(0.3) : flip(0.7);
 
 	// Generosity
 	float max_generosity <- 1.0;
 	float generosity_consum <- 0.00005;
 	float generosity <- rnd(max_generosity) update: generosity + generosity_consum max: max_generosity;
 	bool generous <- false;
-	bool want_drink <- shy ? flip(0.3) : flip(0.7);
+	bool want_drink <- friendly ? flip(0.3) : flip(0.7);
 	bool offered_drink <- false;
 	bool has_drink <- false;
 	point drinkee_point <- nil;
@@ -202,7 +203,7 @@ species FestivalGuest skills: [moving, fipa] {
 
 	// Dance.
 	reflex dance when: targetPoint = nil and !(hungry or thirsty) {
-		do wander speed: dance_speed bounds: square(0.5 #m);
+		do wander speed: party ? dance_speed * 3 : dance_speed bounds: square(0.5 #m);
 		moving <- false;
 
 		if mod(cycle, 1000) = 0 {
@@ -400,7 +401,7 @@ species FestivalGuest skills: [moving, fipa] {
 
 			loop neighbour over: neighbours {
 				ask neighbour {
-					if self.targetPoint = nil and !(self.hungry or self.thirsty) and (!myself.shy or flip(0.5)) {
+					if self.targetPoint = nil and !(self.hungry or self.thirsty) and (!myself.friendly or flip(0.5)) {
 						myself.random_point <- self.location + {rnd(guest_interaction_distance), rnd(guest_interaction_distance)};
 						if myself.random_point.x > worldDimension {
 							myself.random_point <- {worldDimension, myself.random_point.y};
@@ -442,12 +443,13 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// You'll agree for free drinks when thristy.
-	reflex wantDrinkFromOthers when: thirst > 0.75 and !want_drink and (!shy or flip(0.5)) {
+	reflex wantDrinkFromOthers when: thirst > 0.75 and !want_drink and (!friendly or flip(0.5)) {
 		want_drink <- true;
 	}
 
 	// Look for drinking buddies when feeling generous.
-	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil and (!shy or flip(0.5)) and (length(DrinksShop at_distance(5 * building_interaction_distance)) != 0) {
+	reflex findDrinkingBuddies when: !moving and generous and drinkee_point = nil and (!friendly or flip(0.5)) and (length(DrinksShop at_distance (5 * building_interaction_distance))
+	!= 0) {
 		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
 			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
@@ -469,7 +471,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Offer drink when feeling generous.
-	reflex offerDrink when: !moving and generous and drinkee_point = nil and (!shy or flip(0.5)) and (length(DrinksShop at_distance(2 * guest_interaction_distance)) != 0) {
+	reflex offerDrink when: !moving and generous and drinkee_point = nil and (!friendly or flip(0.5)) and (length(DrinksShop at_distance (2 * guest_interaction_distance)) != 0) {
 		list<EvilGuest> neighbours <- EvilGuest at_distance (2 * guest_interaction_distance);
 		if length(neighbours) = 0 {
 			list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
@@ -602,8 +604,8 @@ species FestivalGuest skills: [moving, fipa] {
 	reflex gotoBestStage when: all_stage_evaluated {
 		do start_conversation with: [to::list(best_stage), protocol::'fipa-contract-net', performative::'inform', contents::['I am coming']];
 		targetPoint <- best_stage_loc;
-		float dx <- shy ? rnd(-20.0, 20.0) : rnd(-10.0, 10.0);
-		float dy <- shy ? rnd(32.0, 40.0) : rnd(8.0, 10.0);
+		float dx <- friendly ? rnd(-20.0, 20.0) : rnd(-10.0, 10.0);
+		float dy <- friendly ? rnd(32.0, 40.0) : rnd(8.0, 10.0);
 		targetPoint <- {targetPoint.x + dx, targetPoint.y + rnd(8, 10)};
 		best_utility <- stage_utility[stage_locs index_of (best_stage_loc)];
 		write '\t(Time ' + time + '): ' + name + ' choice: ' + best_stage + " with utility " + best_utility;
@@ -611,7 +613,7 @@ species FestivalGuest skills: [moving, fipa] {
 	}
 
 	// Shy away when near a lot of people.
-	reflex shyAway when: !moving and shy and flip(0.5) and mod(cycle, 10000) = 0 {
+	reflex shyAway when: !moving and friendly and flip(0.5) and mod(cycle, 10000) = 0 {
 		list<EvilGuest> evil_neighbours <- EvilGuest at_distance (3 * guest_interaction_distance);
 		list<FestivalGuest> neighbours <- FestivalGuest at_distance (2 * guest_interaction_distance);
 		list<Journalist> journalist_neighbours <- Journalist at_distance (5 * guest_interaction_distance);
@@ -621,7 +623,7 @@ species FestivalGuest skills: [moving, fipa] {
 			random_point <- {rnd(worldDimension), rnd(worldDimension)};
 			targetPoint <- random_point;
 			at_store <- true;
-			write "Cycle (" + cycle + ") (" + name + ") feeling shy. Moving to new location.";
+			write "Cycle (" + cycle + ") (" + name + ") feeling friendly. Moving to new location.";
 		}
 
 	}
@@ -1309,6 +1311,9 @@ species Journalist skills: [moving, fipa] {
 	point drinksPoint <- nil;
 	point random_point <- nil;
 	point targetPoint <- nil;
+	bool controversial_questions <- flip(0.5);
+	bool party <- flip(0.5);
+	bool interest_matched <- false;
 
 	// Stage variables
 	list<float> my_preferences <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
@@ -1512,6 +1517,10 @@ species Journalist skills: [moving, fipa] {
 							myself.random_point <- {myself.random_point.x, 0.0};
 						}
 
+						if (myself.party = self.party) {
+							myself.interest_matched <- true;
+						}
+
 						myself.targetPoint <- myself.random_point;
 						myself.random_point <- nil;
 						myself.at_store <- true;
@@ -1521,6 +1530,17 @@ species Journalist skills: [moving, fipa] {
 						self.being_interviewed <- true;
 						self.want_to_be_interviewed <- flip(0.5);
 						write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") interviewing (" + self.name + ")";
+						if (myself.controversial_questions) {
+							if (!self.friendly) {
+								write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") interview is ruined by (" + self.name + ")" + " because of controversial questions\n";
+								myself.interviewing <- false;
+								random_point <- {rnd(worldDimension), rnd(worldDimension)};
+								targetPoint <- random_point;
+								break;
+							}
+
+						}
+
 						break;
 					}
 
@@ -1532,7 +1552,15 @@ species Journalist skills: [moving, fipa] {
 
 	}
 
-	reflex doneInterviewing when: interviewing and mod(cycle, 10000) = 0 {
+	reflex doneInterviewing when: interviewing and !interest_matched and mod(cycle, 10000) = 0 {
+		interviewed_count <- interviewed_count + 1;
+		interviewing <- false;
+		random_point <- {rnd(worldDimension), rnd(worldDimension)};
+		targetPoint <- random_point;
+	}
+
+	reflex doneInterviewingProlong when: interviewing and interest_matched and mod(cycle, 12000) = 0 {
+		write "Cycle (" + string(cycle) + ") Agent (" + name + ") prolongs the interview.";
 		interviewed_count <- interviewed_count + 1;
 		interviewing <- false;
 		random_point <- {rnd(worldDimension), rnd(worldDimension)};
@@ -1757,13 +1785,20 @@ experiment festival type: gui {
 			species Stage aspect: icon;
 		}
 
+		display chart {
+			chart "my_chart" type: histogram {
+				datalist (FestivalGuest collect each.name) value: (FestivalGuest collect each.distance_travelled);
+			}
+
+		}
+
 		//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
 		//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
 		//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
 		//inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
 		//inspect "stage" value: Stage attributes: ["showing_act"] type: table;
 		//inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
-		//inspect "shyness" value: FestivalGuest attributes: ["shy"];
+		//inspect "shyness" value: FestivalGuest attributes: ["friendly"];
 	}
 
 }
