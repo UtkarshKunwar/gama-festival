@@ -1202,7 +1202,7 @@ species InformationCentre skills: [fipa] {
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #cyan;
+		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: rgb(100, 100, 255);
 	}
 
 	// Parameters for stores.
@@ -1626,7 +1626,7 @@ species FoodShop schedules: [] frequency: 0 {
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #orange;
+		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #darkorange;
 	}
 
 }
@@ -1707,21 +1707,34 @@ species Stage skills: [fipa] {
 		act_attributes <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
 	}
 
-	image_file my_icon <- image_file("../includes/data/stages/" + role + ".png");
-	list<rgb> mycolors <- [rgb(192, 252, 15, 100), rgb(15, 192, 252, 100), rgb(252, 15, 192, 100)];
+	file my_icon <- obj_file("../includes/mesh/stages/" + role + "1.obj", 90::{-1, 0, 0});
+	list<rgb> mycolors <- [rgb(192, 252, 15), rgb(15, 192, 252), rgb(252, 15, 192)];
+	int icon_status <- 0;
 
 	aspect icon {
-		draw my_icon size: 10;
+		draw my_icon size: 4#m at: location + {0, 0, 3.5#m} color: rgb(75, 75, 75);
 	}
+
+	reflex animate when: showing_act and mod(cycle, 2000) {
+		if icon_status = 0 {
+			my_icon <- obj_file("../includes/mesh/stages/" + role + "2.obj", 90::{-1, 0 , 0});
+			icon_status <- 1;
+		} else if icon_status = 1 {
+			my_icon <- obj_file("../includes/mesh/stages/" + role + "1.obj", 90::{-1, 0, 0});
+			icon_status <- 0;
+		}
+	}
+
+	file stage <- obj_file("../includes/mesh/stages/stage.obj", 90::{0, 0, 1});
 
 	// Display character of the guest.
 	aspect range {
 		if (showing_act) {
-			draw circle(8) color: any(mycolors) border: #black;
+			draw stage size: 15#m color: any(mycolors) border: #black;
+			draw replace(role, first(role), upper_case(first(role))) size: 10#m color: #black at: location + {-3.5#m, 5#m, 1#m};
 		} else {
-			draw circle(8) color: mycolors[1] border: #black;
+			draw stage size: 15#m color: mycolors[1] border: #black;
 		}
-
 	}
 
 }
