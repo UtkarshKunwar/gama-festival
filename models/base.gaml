@@ -86,8 +86,8 @@ species FestivalGuest skills: [moving, fipa] {
 	float boredom_consum <- friendly ? 0.00002 : 0.00001;
 
 	// Hunger and thirst updates.
-	float hunger <- rnd(max_hunger) update: hunger + hunger_consum max: max_hunger;
-	float thirst <- rnd(max_thirst) update: thirst + thirst_consum max: max_thirst;
+	float hunger <- rnd(max_hunger) update: hunger + rnd(0.8, 1.0) * hunger_consum max: max_hunger;
+	float thirst <- rnd(max_thirst) update: thirst + rnd(0.8, 1.0) * thirst_consum max: max_thirst;
 	float boredom <- 0.5;
 	point targetPoint <- nil;
 
@@ -117,7 +117,7 @@ species FestivalGuest skills: [moving, fipa] {
 	// Generosity
 	float max_generosity <- 1.0;
 	float generosity_consum <- 0.00005;
-	float generosity <- rnd(max_generosity) update: generosity + generosity_consum max: max_generosity;
+	float generosity <- rnd(max_generosity) update: generosity + rnd(0.8, 1.0) * generosity_consum max: max_generosity;
 	bool generous <- false;
 	bool want_drink <- friendly ? flip(0.3) : flip(0.7);
 	bool offered_drink <- false;
@@ -173,7 +173,7 @@ species FestivalGuest skills: [moving, fipa] {
 		} else if boredom <= 0.0 {
 			boredom <- 0.0;
 		} else {
-			boredom <- boredom + boredom_consum;
+			boredom <- boredom + rnd(0.8, 1.0) * boredom_consum;
 		}
 
 	}
@@ -342,6 +342,7 @@ species FestivalGuest skills: [moving, fipa] {
 		thirsty <- false;
 		boredom <- boredom / 1.2;
 		bored <- false;
+		generosity <- generosity / 2.0;
 		random_point <- {rnd(worldDimension), rnd(worldDimension)};
 		targetPoint <- random_point;
 		//write "Cycle (" + string(cycle) + ") Agent (" + string(name) + ") At Food Point";
@@ -359,6 +360,7 @@ species FestivalGuest skills: [moving, fipa] {
 		boredom <- boredom / 1.2;
 		bored <- false;
 		want_to_be_interviewed <- flip(0.5);
+		generosity <- generosity / 2.0;
 		if drinkee_point != nil {
 			has_drink <- true;
 			random_point <- drinkee_point;
@@ -486,7 +488,8 @@ species FestivalGuest skills: [moving, fipa] {
 					myself.thirst <- 1.0;
 					self.offered_drink <- true;
 					self.offerer <- myself;
-					myself.generosity <- 0.25;
+					myself.generosity <- myself.generosity / 4.0;
+					self.generosity <- self.generosity / 4.0;
 					myself.drinkee_point <-
 					{self.location.x + rnd(-building_interaction_distance, building_interaction_distance), self.location.y + rnd(-building_interaction_distance, building_interaction_distance)};
 					write "Cycle (" + string(cycle) + ")" + myself.name + " offered drink to " + self.name;
@@ -643,7 +646,7 @@ species EvilGuest skills: [moving, fipa] {
 	}
 
 	bool thirsty <- false;
-	float thirst <- rnd(max_thirst) update: thirst + thirst_consum max: max_thirst;
+	float thirst <- rnd(max_thirst) update: thirst + rnd(0.8, 1.0) * thirst_consum max: max_thirst;
 	float max_boredom <- 1.0;
 	float boredom_consum <- 0.00001;
 	float boredom <- 0.5;
@@ -661,7 +664,7 @@ species EvilGuest skills: [moving, fipa] {
 	bool bad <- false;
 	float max_generosity <- 1.0;
 	float generosity_consum <- 0.00005;
-	float generosity <- rnd(max_generosity) update: generosity + generosity_consum max: max_generosity;
+	float generosity <- rnd(max_generosity) update: generosity + rnd(0.8, 1.0) * generosity_consum max: max_generosity;
 	bool generous <- false;
 	bool want_drink <- flip(0.5);
 	bool offered_drink <- false;
@@ -704,7 +707,7 @@ species EvilGuest skills: [moving, fipa] {
 		} else if boredom <= 0.0 {
 			boredom <- 0.0;
 		} else {
-			boredom <- boredom + boredom_consum;
+			boredom <- boredom + rnd(0.8, 1.0) * boredom_consum;
 		}
 
 	}
@@ -890,7 +893,7 @@ species EvilGuest skills: [moving, fipa] {
 				}
 
 			} // deal with stages invitation and closure
-else if (species(information.sender) = Stage) {
+			else if (species(information.sender) = Stage) {
 				if (information.contents[0] = 'Invitation') {
 					stage_count <- stage_count + 1;
 					// Evaluate utility of the act
@@ -1290,9 +1293,9 @@ species Journalist skills: [moving, fipa] {
 	float curiosity_consum <- 0.00001;
 
 	// Hunger and thirst updates.
-	float hunger <- rnd(max_hunger) update: hunger + 0.5 * hunger_consum max: max_hunger;
-	float thirst <- rnd(max_thirst) update: thirst + 0.5 * thirst_consum max: max_thirst;
-	float curiosity <- rnd(0.2, max_curious) update: curiosity - curiosity_consum min: 0.0 max: max_curious;
+	float hunger <- rnd(max_hunger) update: hunger + 0.5 * rnd(0.8, 1.0) * hunger_consum max: max_hunger;
+	float thirst <- rnd(max_thirst) update: thirst + 0.5 * rnd(0.8, 1.0) * thirst_consum max: max_thirst;
+	float curiosity <- rnd(0.2, max_curious) update: curiosity - rnd(0.8, 1.0) * curiosity_consum min: 0.0 max: max_curious;
 
 	// State variables.
 	bool hungry <- false;
@@ -1827,23 +1830,24 @@ experiment festival type: gui {
 	parameter "Move seped: " var: move_speed min: 0.01 max: 0.1 category: "All";
 	parameter "Dance speed: " var: dance_speed min: 0.01 max: 0.1 category: "All";
 	output {
-		display chart1 refresh: every(5 #cycles) {
+		display EvilBehaviour refresh: every(100 #cycles) {
 			chart "Evil behaviour" type: series {
-				data "Compalaints" value: (InformationCentre collect length(each.badPeoples)) color: #green;
+				data "Complaints" value: (InformationCentre collect length(each.badPeoples)) color: #green;
 				data "Alive" value: length(EvilGuest) color: #red;
 			}
 
 		}
 
-		display chart2 refresh: every(5 #cycles) {
-			chart "Guard Wallet" type: series {
-				data "Guard Wallet" value: (SecurityGuard collect each.wallet) color: #blue;
+		display GenerosityBoredom refresh: every(5 #cycles) {
+			chart "Generosity and boredom" type: series {
+				data "Generosity" value: (FestivalGuest collect (each.generosity)) color: #blue;
+				data "Boredom" value: (FestivalGuest collect (each.boredom)) color: #red;
 			}
 
 		}
 
 		// Display map.
-		display simulation type: opengl {
+		display Festival type: opengl {
 			species FestivalGuest aspect: icon;
 			species EvilGuest aspect: icon;
 			species InformationCentre aspect: icon refresh: false;
@@ -1855,13 +1859,12 @@ experiment festival type: gui {
 			species Stage aspect: range;
 			species Stage aspect: icon;
 		}
-
+		inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"];
 	}
 
 	//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
 	//inspect "guest" value: FestivalGuest attributes: ["bored"] type: table;
 	//inspect "evil guest" value: EvilGuest attributes: ["bored", "bad"] type: table;
-	//inspect "guard" value: SecurityGuard attributes: ["wallet", "isCorrupt", "isStrict"] type: table;
 	//inspect "stage" value: Stage attributes: ["showing_act"] type: table;
 	//inspect "evilguest2" value: EvilGuest attributes: ["generous", "want_drink", "offered_drink", "has_drink", "drinkee_point", "offerer"] type: table;
 	//inspect "shyness" value: FestivalGuest attributes: ["friendly"];
