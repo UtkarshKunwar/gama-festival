@@ -1207,6 +1207,7 @@ species InformationCentre skills: [fipa] {
 
 	aspect icon {
 		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: rgb(100, 100, 255);
+		draw "Information\n    Centre" size: 0.1#m at: location + {-6.5, 6, 0} color: #black;
 	}
 
 	// Parameters for stores.
@@ -1657,6 +1658,7 @@ species FoodShop schedules: [] frequency: 0 {
 
 	aspect icon {
 		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #darkorange;
+		draw "Food" size: 0.1#m at: location + {-3.5, 6, 0} color: #black;
 	}
 
 }
@@ -1669,6 +1671,7 @@ species DrinksShop schedules: [] frequency: 0 {
 
 	aspect icon {
 		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #green;
+		draw "Drinks" size: 0.1#m at: location + {-3.5, 6, 0} color: #black;
 	}
 
 }
@@ -1681,6 +1684,7 @@ species ExitGate schedules: [] frequency: 0 {
 
 	aspect icon {
 		draw my_icon size: 5 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #red;
+		draw "Exit" size: 0.1#m at: location + {-3, -2, 0} color: #black rotate: 90;
 	}
 
 }
@@ -1798,6 +1802,19 @@ experiment festival type: gui {
 		display Festival type: opengl ambient_light: 255 camera_pos: {-6.4272, 125.1815, 112.7103} camera_look_pos: {41.5621, 59.1299, -8.3277} camera_up_vector:
 		{0.4873, 0.6707, 0.5592} {
 			image image_file("../includes/data/grass.jpg") refresh: false transparency: 0.4;
+			graphics "Legend Background" refresh: false size: {1, 0.75}{
+				draw square(23#m) at: {11.5, 11.5} color: rgb(255, 255, 255, 100) border: #black;
+			}
+			graphics "Legend" refresh: false {
+				draw obj_file("../includes/mesh/normal_person1.obj") at: {3, 2.5} color: #grey size: 3.5#m;
+				draw "Festival Guest" at: {5, 3.5} color: #black size: 0.1#m;
+				draw obj_file("../includes/mesh/evil_person1.obj") at: {3, 6.5} color: #darkred size: 3.5#m;
+				draw "Evil Guy" at: {5, 7.5} color: #black size: 0.1#m;
+				draw obj_file("../includes/mesh/guard.obj") at: {2.5, 10.5} color: #black size: 3.5#m;
+				draw "Security Guard" at: {5, 11.5} color: #black size: 0.1#m;
+				draw obj_file("../includes/mesh/journalist.obj") at: {3, 14.5} color: #indigo size: 3.5#m;
+				draw "Journalist" at: {5, 15.5} color: #black size: 0.1#m;
+			}
 			species FestivalGuest aspect: icon;
 			species EvilGuest aspect: icon;
 			species InformationCentre aspect: icon refresh: false;
