@@ -76,7 +76,7 @@ species FestivalGuest skills: [moving, fipa] {
 	int icon_status <- 0;
 
 	// Personality
-	bool party <- flip(0.5); // if not party it is implied that the guest is chill 
+	bool party <- flip(0.5); // if not party it is implied that the guest is chill
 	bool friendly <- flip(0.3);
 	float max_boredom <- 1.0;
 	float boredom_consum <- friendly ? 0.00002 : 0.00001;
@@ -1776,6 +1776,14 @@ experiment festival type: gui {
 	parameter "Dance speed: " var: dance_speed min: 0.01 max: 0.1 category: "All";
 	output {
 	// Display map.
+
+		display chart {
+			chart "my_chart" type: histogram {
+				datalist (FestivalGuest collect each.name) value: (FestivalGuest collect each.distance_travelled);
+			}
+
+		}
+
 		display myDisplay type: opengl ambient_light: 255 camera_pos: {-6.4272, 125.1815, 112.7103} camera_look_pos: {41.5621, 59.1299, -8.3277} camera_up_vector:
 		{0.4873, 0.6707, 0.5592} {
 			image image_file("../includes/data/grass.jpg") refresh: false transparency: 0.4;
@@ -1789,13 +1797,6 @@ experiment festival type: gui {
 			species Journalist aspect: icon;
 			species Stage aspect: range;
 			species Stage aspect: icon;
-		}
-
-		display chart {
-			chart "my_chart" type: histogram {
-				datalist (FestivalGuest collect each.name) value: (FestivalGuest collect each.distance_travelled);
-			}
-
 		}
 
 		//inspect "journalist inspector" value: Journalist attributes: ["interviewed_count", "moving", "interviewing", "curious"];
