@@ -1038,12 +1038,8 @@ else if (species(information.sender) = Stage) {
 //------------------------------------------------------Security Guard Begins------------------------------------------------------
 species SecurityGuard skills: [moving, fipa] {
 // Display icon of the information centre.
-	image_file my_icon <- image_file("../includes/data/security.png");
+	file my_icon <- obj_file("../includes/mesh/guard.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
-
-	aspect icon {
-		draw my_icon size: 10 * icon_size;
-	}
 
 	bool hunting <- false;
 	bool eliminated <- false;
@@ -1113,7 +1109,7 @@ species SecurityGuard skills: [moving, fipa] {
 				targetPoint <- exitPoint;
 				if isViolent {
 					write "Cycle (" + string(cycle) + ") (" + name + ") insanely beating the evil guy";
-					my_icon <- image_file("../includes/data/security_violent.png");
+					my_icon <- obj_file("../includes/mesh/guard_angry.obj", 90::{-1, 0, 0});
 				}
 
 			}
@@ -1189,8 +1185,13 @@ species SecurityGuard skills: [moving, fipa] {
 		hunting <- false;
 		eliminated <- false;
 		reached_bad_agent <- false;
-		my_icon <- image_file("../includes/data/security.png");
-	} }
+		my_icon <- obj_file("../includes/mesh/guard.obj", 90::{-1, 0, 0});
+	}
+
+	aspect icon {
+		draw my_icon size: 5 * icon_size at: location + {0, 0, 3.75 * icon_size} color: isViolent? rgb(100, 0, 0) : #black;
+	}
+}
 
 	//------------------------------------------------------Security Guard Ends------------------------------------------------------
 
@@ -1198,11 +1199,11 @@ species SecurityGuard skills: [moving, fipa] {
 //------------------------------------------------------Information Centre Begins------------------------------------------------------
 species InformationCentre skills: [fipa] {
 // Display icon of the information centre.
-	image_file my_icon <- image_file("../includes/data/information_centre.png");
+	file my_icon <- obj_file("../includes/mesh/information_centre.obj", 90::{-1, 0, 0});
 	float icon_size <- 1 #m;
 
 	aspect icon {
-		draw my_icon size: 10 * icon_size;
+		draw my_icon size: 7 * icon_size at: location + {0, 0, 4.9 * icon_size} color: #cyan;
 	}
 
 	// Parameters for stores.
@@ -1730,7 +1731,8 @@ species Stage skills: [fipa] {
 experiment festival type: gui {
 	output {
 	// Display map.
-		display myDisplay type: opengl {
+		display myDisplay type: opengl ambient_light: 255 {
+			image image_file("../includes/data/grass.jpg") refresh: false transparency: 0.6;
 			species FestivalGuest aspect: icon;
 			species EvilGuest aspect: icon;
 			species InformationCentre aspect: icon refresh: false;
