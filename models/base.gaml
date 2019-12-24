@@ -1311,6 +1311,7 @@ species Journalist skills: [moving, fipa] {
 	point drinksPoint <- nil;
 	point random_point <- nil;
 	point targetPoint <- nil;
+	bool controversial_questions <- flip(0.5);
 
 	// Stage variables
 	list<float> my_preferences <- [rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0), rnd(0.0, 1.0)]; //1.Lightshow 2.Speakers 3.Band 4.Seats 5.Food 6.Popularity
@@ -1523,6 +1524,17 @@ species Journalist skills: [moving, fipa] {
 						self.being_interviewed <- true;
 						self.want_to_be_interviewed <- flip(0.5);
 						write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") interviewing (" + self.name + ")";
+						if (myself.controversial_questions) {
+							if (!self.friendly) {
+								write "Cycle (" + string(cycle) + ") Agent (" + myself.name + ") interview is ruined by (" + self.name + ")" + " because of controversial questions\n";
+								myself.interviewing <- false;
+								random_point <- {rnd(worldDimension), rnd(worldDimension)};
+								targetPoint <- random_point;
+								break;
+							}
+
+						}
+
 						break;
 					}
 
